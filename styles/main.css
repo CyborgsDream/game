@@ -5,10 +5,16 @@ body {
     overflow: hidden;
 }
 
+html, body {
+    height: 100%;
+}
+
 canvas {
     display: block;
     margin: 0 auto;
     background: #222;
     border: none;
     border-radius: 0;
-}
+    width: 100%;
+    height: 100%;
+    touch-action: none;}

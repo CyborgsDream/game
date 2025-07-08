@@ -86,7 +86,7 @@ function project3D(x, y, h) {
   let denom = localZ * perspectiveScale + focal;
   if (denom <= 1) return null; // Behind camera
   let screenX = (px * tileSize * focal) / denom;
-  let screenY = (localY * tileSize * focal) / denom;
+  let screenY = -(localY * tileSize * focal) / denom;
 
   return [screenX, screenY, denom];
 }
@@ -94,8 +94,8 @@ function project3D(x, y, h) {
 // --- Camera Update ---
 function updateCamera() {
   // Always move forward in the direction of view
-  camera.x -= cosYaw * camera.speed;
-  camera.y -= sinYaw * camera.speed;
+  camera.x += sinYaw * camera.speed;
+  camera.y += cosYaw * camera.speed;
 }
 
 // --- Terrain Drawing ---
@@ -180,8 +180,18 @@ function shadeColor(hex, percent) {
 
 // --- Keyboard Controls ---
 let keyState = {};
-document.addEventListener('keydown', e => { keyState[e.code] = true; });
-document.addEventListener('keyup', e => { keyState[e.code] = false; });
+document.addEventListener('keydown', e => {
+  keyState[e.code] = true;
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Equal', 'Minus'].includes(e.code)) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', e => {
+  keyState[e.code] = false;
+});
+window.addEventListener('blur', () => {
+  keyState = {};
+});
 
 function handleCameraInput() {
   // Left/right: rotate flying direction (and camera view)

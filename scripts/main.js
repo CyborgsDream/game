@@ -9,6 +9,9 @@ const tilesInView = 36;
 // Perspective parameters
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
+// Derived horizontal FOV for culling
+let horizontalFOV = 2 * Math.atan(Math.tan(fieldOfView / 2) * canvas.width / canvas.height);
+let cosHalfHFOV = Math.cos(horizontalFOV / 2);
 // Scale factor to exaggerate depth and make far tiles smaller
 // Higher values create a stronger sense of perspective
 const perspectiveScale = 30;
@@ -67,6 +70,8 @@ function updateOrientation() {
   cosFlyYaw = Math.cos(camera.flyYaw);
   sinPitch = Math.sin(camera.pitch);
   cosPitch = Math.cos(camera.pitch);
+  horizontalFOV = 2 * Math.atan(Math.tan(fieldOfView / 2) * canvas.width / canvas.height);
+  cosHalfHFOV = Math.cos(horizontalFOV / 2);
 }
 const minPitch = Math.PI / 15;
 const maxPitch = Math.PI / 2.1;
@@ -102,6 +107,22 @@ function updateCamera() {
   camera.y += cosFlyYaw * camera.speed;
 }
 
+// --- Visibility Culling ---
+function isTileVisible(x, y) {
+  const centerX = x + 0.5;
+  const centerY = y + 0.5;
+  const dx = centerX - camera.x;
+  const dy = centerY - camera.y;
+  const distSq = dx * dx + dy * dy;
+  if (distSq === 0) return true;
+  const dot = (dx * cosYaw + dy * sinYaw) / Math.sqrt(distSq);
+  if (dot < cosHalfHFOV) return false;
+  const proj = project3D(centerX, centerY, camera.altitude);
+  if (!proj) return false;
+  const [sx, sy] = proj;
+  return !(sx < -canvas.width || sx > canvas.width || sy < -canvas.height || sy > canvas.height);
+}
+
 // --- Terrain Drawing ---
 function drawSlopedTerrain(ctx) {
   ctx.save();
@@ -116,6 +137,7 @@ function drawSlopedTerrain(ctx) {
     for (let dx = -windowRadius; dx < windowRadius; dx++) {
       let wx = Math.floor(cx + dx);
       let wy = Math.floor(cy + dy);
+      if (!isTileVisible(wx, wy)) continue;
       let depth = (wx - cx) * cosYaw + (wy - cy) * sinYaw;
       drawList.push({x: wx, y: wy, depth});
     }

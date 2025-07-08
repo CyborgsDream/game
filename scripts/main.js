@@ -1,4 +1,4 @@
-// Game version: 006
+// Game version: 007
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -9,6 +9,8 @@ const tilesInView = 36;
 // Perspective parameters
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
+// Scale factor to exaggerate depth and make far tiles smaller
+const perspectiveScale = 10;
 
 // --- Terrain Height Functions ---
 function hash(x, y) {
@@ -79,7 +81,8 @@ function project3D(x, y, h) {
   let localZ = py * sinPitch + dz * cosPitch;
 
   // Perspective
-  let denom = localZ + focal;
+  // Amplify depth by perspectiveScale for a stronger perspective effect
+  let denom = localZ * perspectiveScale + focal;
   if (denom <= 1) return null; // Behind camera
   let screenX = (px * tileSize * focal) / denom;
   let screenY = (localY * tileSize * focal) / denom;

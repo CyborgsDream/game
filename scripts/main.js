@@ -1,4 +1,4 @@
-// Game version: 007
+// Game version: 008
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -10,7 +10,8 @@ const tilesInView = 36;
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
 // Scale factor to exaggerate depth and make far tiles smaller
-const perspectiveScale = 10;
+// Higher values create a stronger sense of perspective
+const perspectiveScale = 15;
 
 // --- Terrain Height Functions ---
 function hash(x, y) {

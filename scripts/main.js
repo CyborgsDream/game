@@ -1,4 +1,4 @@
-// Game version: 004
+// Game version: 005
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -172,8 +172,8 @@ function handleCameraInput() {
   if (keyState['ArrowLeft'])  camera.yaw += 0.02;
   if (keyState['ArrowRight']) camera.yaw -= 0.02;
   // Up/down: tilt camera (pitch)
-  if (keyState['ArrowUp']) camera.pitch = Math.min(camera.pitch + 0.012, maxPitch);
-  if (keyState['ArrowDown']) camera.pitch = Math.max(camera.pitch - 0.012, minPitch);
+  if (keyState['ArrowUp'])   camera.pitch = Math.max(camera.pitch - 0.012, minPitch);
+  if (keyState['ArrowDown']) camera.pitch = Math.min(camera.pitch + 0.012, maxPitch);
   // +/-: change FOV (only main keyboard)
   if (keyState['Equal']) focal = Math.min(focal + 40, 1600);
   if (keyState['Minus']) focal = Math.max(focal - 40, 200);
@@ -186,5 +186,4 @@ function loop() {
   updateCamera();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawSlopedTerrain(ctx);
-  requestAnimationFrame(loop);
-}loop();
+  requestAnimationFrame(loop);}loop();

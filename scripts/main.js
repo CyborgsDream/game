@@ -1,4 +1,4 @@
-// Game version: 003
+// Game version: 004
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');

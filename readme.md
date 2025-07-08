@@ -1,4 +1,4 @@
 # HTML5 Game
 
-**Version:** 005
+**Version:** 006
 A modern HTML5 3D terrain engine starter.

@@ -79,7 +79,7 @@ function project3D(x, y, h) {
   let localZ = py * sinPitch + dz * cosPitch;
 
   // Perspective
-  let denom = localZ;
+  let denom = localZ + focal;
   if (denom <= 1) return null; // Behind camera
   let screenX = (px * tileSize * focal) / denom;
   let screenY = (localY * tileSize * focal) / denom;
@@ -135,7 +135,7 @@ function drawSlopedTerrain(ctx) {
     if (!nw || !ne || !se || !sw) continue;
 
     // Cull if any corner is too close to the camera (prevents overlay artifacts)
-    const minDenom = 1;
+    const minDenom = 10;
     if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) continue;
 
     const [nwX, nwY] = nw;

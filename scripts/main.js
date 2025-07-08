@@ -1,4 +1,4 @@
-// Game version: 008
+// Game version: 009
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -51,16 +51,20 @@ function getColor(x, y) {
 
 // --- Camera State ---
 let camera = {
-  x: 0, y: 0, altitude: 6.5,
+  x: 0, y: 0, altitude: 7.5,
   speed: 0.14,
-  yaw: Math.PI / 4, targetYaw: Math.PI / 4, // view & flight direction
-  pitch: Math.PI / 7, targetPitch: Math.PI / 7 // 25°
+  yaw: Math.PI / 4,       // where the camera looks
+  flyYaw: Math.PI / 4,    // direction of forward movement
+  pitch: Math.PI / 7
 };
 let sinYaw = Math.sin(camera.yaw), cosYaw = Math.cos(camera.yaw);
+let sinFlyYaw = Math.sin(camera.flyYaw), cosFlyYaw = Math.cos(camera.flyYaw);
 let sinPitch = Math.sin(camera.pitch), cosPitch = Math.cos(camera.pitch);
 function updateOrientation() {
   sinYaw = Math.sin(camera.yaw);
   cosYaw = Math.cos(camera.yaw);
+  sinFlyYaw = Math.sin(camera.flyYaw);
+  cosFlyYaw = Math.cos(camera.flyYaw);
   sinPitch = Math.sin(camera.pitch);
   cosPitch = Math.cos(camera.pitch);
 }
@@ -93,9 +97,9 @@ function project3D(x, y, h) {
 
 // --- Camera Update ---
 function updateCamera() {
-  // Always move forward in the direction of view
-  camera.x += sinYaw * camera.speed;
-  camera.y += cosYaw * camera.speed;
+  // Always move forward in the direction of flight
+  camera.x += sinFlyYaw * camera.speed;
+  camera.y += cosFlyYaw * camera.speed;
 }
 
 // --- Terrain Drawing ---
@@ -195,8 +199,14 @@ window.addEventListener('blur', () => {
 
 function handleCameraInput() {
   // Left/right: rotate flying direction (and camera view)
-  if (keyState['ArrowLeft'])  camera.yaw -= 0.02;
-  if (keyState['ArrowRight']) camera.yaw += 0.02;
+  if (keyState['ArrowLeft'])  {
+    camera.yaw -= 0.02;
+    camera.flyYaw -= 0.02;
+  }
+  if (keyState['ArrowRight']) {
+    camera.yaw += 0.02;
+    camera.flyYaw += 0.02;
+  }
   // Up/down: tilt camera (pitch)
   if (keyState['ArrowUp'])   camera.pitch = Math.max(camera.pitch - 0.012, minPitch);
   if (keyState['ArrowDown']) camera.pitch = Math.min(camera.pitch + 0.012, maxPitch);

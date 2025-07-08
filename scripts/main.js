@@ -180,8 +180,18 @@ function shadeColor(hex, percent) {
 
 // --- Keyboard Controls ---
 let keyState = {};
-document.addEventListener('keydown', e => { keyState[e.code] = true; });
-document.addEventListener('keyup', e => { keyState[e.code] = false; });
+document.addEventListener('keydown', e => {
+  keyState[e.code] = true;
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Equal', 'Minus'].includes(e.code)) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', e => {
+  keyState[e.code] = false;
+});
+window.addEventListener('blur', () => {
+  keyState = {};
+});
 
 function handleCameraInput() {
   // Left/right: rotate flying direction (and camera view)

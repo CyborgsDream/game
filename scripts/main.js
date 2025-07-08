@@ -162,6 +162,24 @@ function shadeColor(hex, percent) {
   return `rgb(${r},${g},${b})`;
 }
 
+// --- Debug Info Display ---
+function drawInfo(ctx) {
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.font = '14px monospace';
+  const toDeg = a => (a * 180 / Math.PI).toFixed(1);
+  const lines = [
+    `x: ${camera.x.toFixed(2)} y: ${camera.y.toFixed(2)}`,
+    `alt: ${camera.altitude.toFixed(2)} speed: ${camera.speed.toFixed(2)}`,
+    `yaw: ${toDeg(camera.yaw)}\u00B0 pitch: ${toDeg(camera.pitch)}\u00B0`,
+    `fov: ${focal}`
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], 10, 20 + i * 18);
+  }
+  ctx.restore();
+}
+
 // --- Keyboard Controls ---
 let keyState = {};
 document.addEventListener('keydown', e => { keyState[e.code] = true; });
@@ -186,4 +204,4 @@ function loop() {
   updateCamera();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawSlopedTerrain(ctx);
-  requestAnimationFrame(loop);}loop();
+  drawInfo(ctx);  requestAnimationFrame(loop);}loop();

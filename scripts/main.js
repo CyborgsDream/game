@@ -1,4 +1,4 @@
-// Game version: 007
+// Game version: 006
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -174,31 +174,9 @@ function shadeColor(hex, percent) {
   return `rgb(${r},${g},${b})`;
 }
 
-// --- UI Overlay ---
-const uiElem = document.getElementById('ui');
-let uiVisible = true;
-
-function toggleUI() {
-  uiVisible = !uiVisible;
-  uiElem.style.display = uiVisible ? 'block' : 'none';
-}
-
-function updateUI() {
-  if (!uiVisible) return;
-  uiElem.textContent =
-    `Alt: ${camera.altitude.toFixed(1)} ` +
-    `Yaw: ${(camera.yaw * 180/Math.PI).toFixed(0)}\u00B0 ` +
-    `Pitch: ${(camera.pitch * 180/Math.PI).toFixed(0)}\u00B0 ` +
-    `FOV: ${(fieldOfView * 180/Math.PI).toFixed(0)}\u00B0\n` +
-    'Controls: \u2190/\u2192 rotate, \u2191/\u2193 tilt, +/- FOV, H toggle HUD';
-}
-
 // --- Keyboard Controls ---
 let keyState = {};
-document.addEventListener('keydown', e => {
-  keyState[e.code] = true;
-  if (e.code === 'KeyH') toggleUI();
-});
+document.addEventListener('keydown', e => { keyState[e.code] = true; });
 document.addEventListener('keyup', e => { keyState[e.code] = false; });
 
 function handleCameraInput() {
@@ -219,11 +197,9 @@ function handleCameraInput() {
 function loop() {
   handleCameraInput();
   updateCamera();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawSlopedTerrain(ctx);
-  updateUI();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);  drawSlopedTerrain(ctx);
   requestAnimationFrame(loop);
 }
 
 // Start the render loop after the DOM has finished loading
-window.addEventListener('load', () => { updateUI(); loop(); });
+window.addEventListener('load', loop);

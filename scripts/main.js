@@ -1,4 +1,4 @@
-// Game version: 005
+// Game version: 006
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -31,6 +31,17 @@ function getHeight(x, y) {
   const h = computeHeight(x, y);
   heightCache[key] = h;
   return h;
+}
+
+// Persistent color map
+let colorMap = {};
+function getColor(x, y) {
+  const key = x + ',' + y;
+  if (colorMap[key]) return colorMap[key];
+  const palette = ["#aad", "#6b8", "#386", "#2c4", "#c94", "#7b5", "#a83"];
+  const idx = Math.floor(hash(x + 1.5, y - 2.7) * palette.length);
+  colorMap[key] = palette[idx];
+  return colorMap[key];
 }
 
 // --- Camera State ---
@@ -136,8 +147,7 @@ function drawSlopedTerrain(ctx) {
     let avgH = (hNW + hNE + hSE + hSW) / 4;
     let slopeY = ((hNE + hSE) - (hNW + hSW)) / 2;
     let shade = Math.max(0.7, 1.1 - slopeY * 0.12);
-    let baseColors = ["#aad","#6b8","#386","#2c4"];
-    let col = baseColors[Math.floor(avgH)] || "#222";
+    let col = getColor(x, y);
     ctx.fillStyle = shadeColor(col, shade);
 
     ctx.beginPath();

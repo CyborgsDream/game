@@ -197,5 +197,9 @@ function handleCameraInput() {
 function loop() {
   handleCameraInput();
   updateCamera();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawSlopedTerrain(ctx);  requestAnimationFrame(loop);}loop();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);  drawSlopedTerrain(ctx);
+  requestAnimationFrame(loop);
+}
+
+// Start the render loop after the DOM has finished loading
+window.addEventListener('load', loop);

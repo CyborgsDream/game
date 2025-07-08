@@ -1,4 +1,4 @@
-// Game version: 007
+// Game version: 008
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -195,8 +195,8 @@ window.addEventListener('blur', () => {
 
 function handleCameraInput() {
   // Left/right: rotate flying direction (and camera view)
-  if (keyState['ArrowLeft'])  camera.yaw += 0.02;
-  if (keyState['ArrowRight']) camera.yaw -= 0.02;
+  if (keyState['ArrowLeft'])  camera.yaw -= 0.02;
+  if (keyState['ArrowRight']) camera.yaw += 0.02;
   // Up/down: tilt camera (pitch)
   if (keyState['ArrowUp'])   camera.pitch = Math.max(camera.pitch - 0.012, minPitch);
   if (keyState['ArrowDown']) camera.pitch = Math.min(camera.pitch + 0.012, maxPitch);

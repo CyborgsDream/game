@@ -1,4 +1,4 @@
-// Game version: 005
+// Game version: 006
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -6,7 +6,9 @@ const ctx = canvas.getContext('2d');
 // --- Engine Parameters ---
 const tileSize = 32;
 const tilesInView = 36;
-let focal = 750; // Perspective strength
+// Perspective parameters
+let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
+let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
 
 // --- Terrain Height Functions ---
 function hash(x, y) {
@@ -175,8 +177,9 @@ function handleCameraInput() {
   if (keyState['ArrowUp'])   camera.pitch = Math.max(camera.pitch - 0.012, minPitch);
   if (keyState['ArrowDown']) camera.pitch = Math.min(camera.pitch + 0.012, maxPitch);
   // +/-: change FOV (only main keyboard)
-  if (keyState['Equal']) focal = Math.min(focal + 40, 1600);
-  if (keyState['Minus']) focal = Math.max(focal - 40, 200);
+  if (keyState['Equal']) fieldOfView = Math.min(fieldOfView + 0.02, Math.PI - 0.2);
+  if (keyState['Minus']) fieldOfView = Math.max(fieldOfView - 0.02, Math.PI / 6);
+  focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
   updateOrientation();
 }
 
@@ -185,5 +188,4 @@ function loop() {
   handleCameraInput();
   updateCamera();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawSlopedTerrain(ctx);
-  requestAnimationFrame(loop);}loop();
+  drawSlopedTerrain(ctx);  requestAnimationFrame(loop);}loop();

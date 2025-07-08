@@ -1,5 +1,5 @@
+// Game version: 003
 
-window.onload = function() {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -25,8 +25,7 @@ function getHeight(x, y) {
 let camera = {
   x: 0, y: 0, altitude: 6.5,
   speed: 0.14,
-  yaw: Math.PI / 4, targetYaw: Math.PI / 4,
-  moveYaw: Math.PI / 4, targetMoveYaw: Math.PI / 4,
+  yaw: Math.PI / 4, targetYaw: Math.PI / 4, // view & flight direction
   pitch: Math.PI / 7, targetPitch: Math.PI / 7 // 25°
 };
 const minPitch = Math.PI / 15;
@@ -57,11 +56,9 @@ function project3D(x, y, h) {
 
 // --- Camera Update ---
 function updateCamera() {
-  camera.yaw += (camera.targetYaw - camera.yaw) * 0.07;
-  camera.moveYaw += (camera.targetMoveYaw - camera.moveYaw) * 0.07;
-  camera.pitch += (camera.targetPitch - camera.pitch) * 0.09;
-  camera.x -= Math.cos(camera.moveYaw) * camera.speed;
-  camera.y -= Math.sin(camera.moveYaw) * camera.speed;
+  // Always move forward in the direction of view
+  camera.x -= Math.cos(camera.yaw) * camera.speed;
+  camera.y -= Math.sin(camera.yaw) * camera.speed;
 }
 
 // --- Terrain Drawing ---
@@ -100,7 +97,12 @@ function drawSlopedTerrain(ctx) {
     const se = project3D(x + 1, y + 1, hSE);
     const sw = project3D(x, y + 1, hSW);
 
+    // Cull if any point is behind camera (null)
     if (!nw || !ne || !se || !sw) continue;
+
+    // Cull if any corner is too close to the camera (prevents overlay artifacts)
+    const minDenom = 10;
+    if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) continue;
 
     const [nwX, nwY] = nw;
     const [neX, neY] = ne;
@@ -145,16 +147,15 @@ document.addEventListener('keydown', e => { keyState[e.code] = true; });
 document.addEventListener('keyup', e => { keyState[e.code] = false; });
 
 function handleCameraInput() {
-  if (keyState['ArrowLeft'])  camera.targetYaw -= 0.02;
-  if (keyState['ArrowRight']) camera.targetYaw += 0.02;
-  if (keyState['KeyA']) camera.targetMoveYaw -= 0.02;
-  if (keyState['KeyD']) camera.targetMoveYaw += 0.02;
-  if (keyState['ArrowUp'])    camera.targetPitch = Math.min(camera.targetPitch + 0.012, maxPitch);
-  if (keyState['ArrowDown'])  camera.targetPitch = Math.max(camera.targetPitch - 0.012, minPitch);
-  if (keyState['KeyW']) camera.targetPitch = Math.min(camera.targetPitch + 0.012, maxPitch);
-  if (keyState['KeyS']) camera.targetPitch = Math.max(camera.targetPitch - 0.012, minPitch);
-  if (keyState['Equal'] || keyState['NumpadAdd']) focal = Math.min(focal + 40, 1600);
-  if (keyState['Minus'] || keyState['NumpadSubtract']) focal = Math.max(focal - 40, 200);
+  // Left/right: rotate flying direction (and camera view)
+  if (keyState['ArrowLeft'])  camera.yaw += 0.02;
+  if (keyState['ArrowRight']) camera.yaw -= 0.02;
+  // Up/down: tilt camera (pitch)
+  if (keyState['ArrowUp']) camera.pitch = Math.min(camera.pitch + 0.012, maxPitch);
+  if (keyState['ArrowDown']) camera.pitch = Math.max(camera.pitch - 0.012, minPitch);
+  // +/-: change FOV (only main keyboard)
+  if (keyState['Equal']) focal = Math.min(focal + 40, 1600);
+  if (keyState['Minus']) focal = Math.max(focal - 40, 200);
 }
 
 // --- Main Loop ---
@@ -166,4 +167,3 @@ function loop() {
   requestAnimationFrame(loop);
 }
 loop();
-};

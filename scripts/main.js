@@ -12,13 +12,25 @@ let focal = 750; // Perspective strength
 function hash(x, y) {
   return Math.abs(Math.sin(x * 127.1 + y * 311.7) * 43758.5453) % 1;
 }
-function getHeight(x, y) {
+
+// Raw height computation
+function computeHeight(x, y) {
   return Math.floor(
     2.2 +
     2 * Math.sin(x * 0.25 + y * 0.17) +
     1.5 * Math.cos(x * 0.19 - y * 0.23) +
     0.8 * hash(x, y)
   );
+}
+
+// Per-frame height cache
+let heightCache = {};
+function getHeight(x, y) {
+  const key = x + ',' + y;
+  if (heightCache[key] !== undefined) return heightCache[key];
+  const h = computeHeight(x, y);
+  heightCache[key] = h;
+  return h;
 }
 
 // --- Camera State ---
@@ -28,6 +40,14 @@ let camera = {
   yaw: Math.PI / 4, targetYaw: Math.PI / 4, // view & flight direction
   pitch: Math.PI / 7, targetPitch: Math.PI / 7 // 25°
 };
+let sinYaw = Math.sin(camera.yaw), cosYaw = Math.cos(camera.yaw);
+let sinPitch = Math.sin(camera.pitch), cosPitch = Math.cos(camera.pitch);
+function updateOrientation() {
+  sinYaw = Math.sin(camera.yaw);
+  cosYaw = Math.cos(camera.yaw);
+  sinPitch = Math.sin(camera.pitch);
+  cosPitch = Math.cos(camera.pitch);
+}
 const minPitch = Math.PI / 15;
 const maxPitch = Math.PI / 2.1;
 
@@ -38,12 +58,12 @@ function project3D(x, y, h) {
   let dz = h - camera.altitude;
 
   // Rotate around Z (yaw)
-  let px = dx * Math.cos(camera.yaw) - dy * Math.sin(camera.yaw);
-  let py = dx * Math.sin(camera.yaw) + dy * Math.cos(camera.yaw);
+  let px = dx * cosYaw - dy * sinYaw;
+  let py = dx * sinYaw + dy * cosYaw;
 
   // Apply pitch
-  let localY = py * Math.cos(camera.pitch) - dz * Math.sin(camera.pitch);
-  let localZ = py * Math.sin(camera.pitch) + dz * Math.cos(camera.pitch);
+  let localY = py * cosPitch - dz * sinPitch;
+  let localZ = py * sinPitch + dz * cosPitch;
 
   // Perspective
   let denom = (localZ + focal);
@@ -57,8 +77,8 @@ function project3D(x, y, h) {
 // --- Camera Update ---
 function updateCamera() {
   // Always move forward in the direction of view
-  camera.x -= Math.cos(camera.yaw) * camera.speed;
-  camera.y -= Math.sin(camera.yaw) * camera.speed;
+  camera.x -= cosYaw * camera.speed;
+  camera.y -= sinYaw * camera.speed;
 }
 
 // --- Terrain Drawing ---
@@ -67,6 +87,7 @@ function drawSlopedTerrain(ctx) {
   ctx.translate(canvas.width / 2, canvas.height * 0.78);
 
   let cx = camera.x, cy = camera.y;
+  heightCache = {};
   let windowRadius = tilesInView / 2 + 5;
 
   let drawList = [];
@@ -74,7 +95,7 @@ function drawSlopedTerrain(ctx) {
     for (let dx = -windowRadius; dx < windowRadius; dx++) {
       let wx = Math.floor(cx + dx);
       let wy = Math.floor(cy + dy);
-      let depth = (wx - cx) * Math.cos(camera.yaw) + (wy - cy) * Math.sin(camera.yaw);
+      let depth = (wx - cx) * cosYaw + (wy - cy) * sinYaw;
       drawList.push({x: wx, y: wy, depth});
     }
   }
@@ -156,6 +177,7 @@ function handleCameraInput() {
   // +/-: change FOV (only main keyboard)
   if (keyState['Equal']) focal = Math.min(focal + 40, 1600);
   if (keyState['Minus']) focal = Math.max(focal - 40, 200);
+  updateOrientation();
 }
 
 // --- Main Loop ---
@@ -165,5 +187,4 @@ function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawSlopedTerrain(ctx);
   requestAnimationFrame(loop);
-}
-loop();
+}loop();

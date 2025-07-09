@@ -115,7 +115,8 @@ function isTileVisible(x, y) {
   const dy = centerY - camera.y;
   const distSq = dx * dx + dy * dy;
   if (distSq === 0) return true;
-  const dot = (dx * cosYaw + dy * sinYaw) / Math.sqrt(distSq);
+  // Angle between camera forward vector (sinYaw, cosYaw) and tile direction
+  const dot = (dx * sinYaw + dy * cosYaw) / Math.sqrt(distSq);
   if (dot < cosHalfHFOV) return false;
   const proj = project3D(centerX, centerY, camera.altitude);
   if (!proj) return false;

@@ -165,7 +165,9 @@ function drawSlopedTerrain(ctx) {
     if (!nw || !ne || !se || !sw) continue;
 
     // Cull if any corner is too close to the camera (prevents overlay artifacts)
-    const minDenom = 10;
+    // Allow tiles very close to the camera.  Using a smaller value prevents
+    // nearby geometry from being discarded and keeps the screen filled.
+    const minDenom = 1;
     if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) continue;
 
     const [nwX, nwY] = nw;

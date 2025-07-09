@@ -124,6 +124,52 @@ function isTileVisible(x, y) {
 }
 
 // --- Terrain Drawing ---
+function computeTileData(x, y) {
+  const hNW = getHeight(x, y);
+  const hNE = getHeight(x + 1, y);
+  const hSE = getHeight(x + 1, y + 1);
+  const hSW = getHeight(x, y + 1);
+
+  const nw = project3D(x, y, hNW);
+  const ne = project3D(x + 1, y, hNE);
+  const se = project3D(x + 1, y + 1, hSE);
+  const sw = project3D(x, y + 1, hSW);
+
+  if (!nw || !ne || !se || !sw) return null;
+
+  const minDenom = 1;
+  if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) return null;
+
+  const pts = [nw, ne, se, sw];
+  const xs = pts.map(p => p[0]);
+  const ys = pts.map(p => p[1]);
+  const bounds = {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys)
+  };
+
+  const slopeY = ((hNE + hSE) - (hNW + hSW)) / 2;
+  const shade = Math.max(0.7, 1.1 - slopeY * 0.12);
+  const color = shadeColor(getColor(x, y), shade);
+
+  return {pts, bounds, color};
+}
+
+function drawTile(ctx, tile) {
+  ctx.fillStyle = tile.color;
+  ctx.beginPath();
+  ctx.moveTo(tile.pts[0][0], tile.pts[0][1]);
+  ctx.lineTo(tile.pts[1][0], tile.pts[1][1]);
+  ctx.lineTo(tile.pts[2][0], tile.pts[2][1]);
+  ctx.lineTo(tile.pts[3][0], tile.pts[3][1]);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#111a";
+  ctx.stroke();
+}
+
 function drawSlopedTerrain(ctx) {
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height * 0.78);
@@ -144,55 +190,16 @@ function drawSlopedTerrain(ctx) {
   }
   drawList.sort((a, b) => b.depth - a.depth);
 
-  // Culling boundaries
   const padL = 400, padR = 400, padT = 1200, padB = 1600;
   const minX = -padL, maxX = canvas.width + padR;
   const minY = -padT, maxY = canvas.height + padB;
 
-  for (let tile of drawList) {
-    const {x, y} = tile;
-    const hNW = getHeight(x, y);
-    const hNE = getHeight(x + 1, y);
-    const hSE = getHeight(x + 1, y + 1);
-    const hSW = getHeight(x, y + 1);
-
-    const nw = project3D(x, y, hNW);
-    const ne = project3D(x + 1, y, hNE);
-    const se = project3D(x + 1, y + 1, hSE);
-    const sw = project3D(x, y + 1, hSW);
-
-    // Cull if any point is behind camera (null)
-    if (!nw || !ne || !se || !sw) continue;
-
-    // Cull if any corner is too close to the camera (prevents overlay artifacts)
-    // Allow tiles very close to the camera.  Using a smaller value prevents
-    // nearby geometry from being discarded and keeps the screen filled.
-    const minDenom = 1;
-    if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) continue;
-
-    const [nwX, nwY] = nw;
-    const [neX, neY] = ne;
-    const [seX, seY] = se;
-    const [swX, swY] = sw;
-
-    if ([nwX, neX, seX, swX].every(px => px < minX || px > maxX)) continue;
-    if ([nwY, neY, seY, swY].every(py => py < minY || py > maxY)) continue;
-
-    let avgH = (hNW + hNE + hSE + hSW) / 4;
-    let slopeY = ((hNE + hSE) - (hNW + hSW)) / 2;
-    let shade = Math.max(0.7, 1.1 - slopeY * 0.12);
-    let col = getColor(x, y);
-    ctx.fillStyle = shadeColor(col, shade);
-
-    ctx.beginPath();
-    ctx.moveTo(nwX, nwY);
-    ctx.lineTo(neX, neY);
-    ctx.lineTo(seX, seY);
-    ctx.lineTo(swX, swY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#111a";
-    ctx.stroke();
+  for (let tileInfo of drawList) {
+    const data = computeTileData(tileInfo.x, tileInfo.y);
+    if (!data) continue;
+    const {bounds} = data;
+    if (bounds.maxX < minX || bounds.minX > maxX || bounds.maxY < minY || bounds.minY > maxY) continue;
+    drawTile(ctx, data);
   }
   ctx.restore();
 }

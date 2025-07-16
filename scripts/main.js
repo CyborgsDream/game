@@ -66,8 +66,10 @@ function project3D(x, y, h) {
   let dz = h - camera.altitude;
 
   // Rotate around Z (yaw)
-  let px = dx * cosYaw - dy * sinYaw;
-  let py = dx * sinYaw + dy * cosYaw;
+  // Forward direction is (cosYaw, sinYaw)
+  // so local X (right) is (-sinYaw, cosYaw)
+  let px = dx * -sinYaw + dy * cosYaw;
+  let py = dx * cosYaw + dy * sinYaw;
 
   // Apply pitch
   let localY = py * cosPitch - dz * sinPitch;

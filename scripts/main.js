@@ -1,4 +1,4 @@
-// Game version: 009
+// Game version: 010
 import { hash, computeHeight, getColor, shadeColor } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
@@ -85,9 +85,7 @@ function project3D(x, y, h) {
 
 // --- Camera Update ---
 function updateCamera() {
-  // Always move forward in the direction of flight
-  camera.x += sinFlyYaw * camera.speed;
-  camera.y += cosFlyYaw * camera.speed;
+  // Camera movement disabled for mobile orientation control
 }
 
 function updateDebugInfo() {
@@ -215,6 +213,26 @@ document.addEventListener('keyup', e => {
 window.addEventListener('blur', () => {
   keyState = {};
 });
+
+// Mobile device orientation handling
+if (window.DeviceOrientationEvent) {
+  let baseAlpha = null;
+  window.addEventListener('deviceorientation', (e) => {
+    if (baseAlpha === null && e.alpha !== null) {
+      baseAlpha = e.alpha;
+    }
+    if (e.alpha !== null && baseAlpha !== null) {
+      const yawRad = (e.alpha - baseAlpha) * Math.PI / 180;
+      camera.yaw = yawRad;
+      camera.flyYaw = yawRad;
+    }
+    if (e.beta !== null) {
+      const pitchRad = e.beta * Math.PI / 180;
+      camera.pitch = Math.min(maxPitch, Math.max(minPitch, pitchRad));
+    }
+    updateOrientation();
+  });
+}
 
 function handleCameraInput() {
   // Left/right: rotate flying direction (and camera view)

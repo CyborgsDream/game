@@ -152,9 +152,16 @@ function drawTile(ctx, tile) {
   ctx.stroke();
 }
 
+function getVerticalOffset() {
+  const start = 0.78; // offset fraction when looking almost straight ahead
+  const end = 0.5;    // offset fraction when looking straight down
+  const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
+  return canvas.height * (start - (start - end) * t);
+}
+
 function drawSlopedTerrain(ctx) {
   ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height * 0.78);
+  ctx.translate(canvas.width / 2, getVerticalOffset());
 
   let cx = camera.x, cy = camera.y;
   heightCache = {};

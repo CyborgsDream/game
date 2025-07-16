@@ -32,7 +32,12 @@ export function getColor(x, y) {
 }
 
 export function shadeColor(hex, percent) {
-  let num = parseInt(hex.replace('#',''),16);
+  let h = hex.replace('#','');
+  // Expand 3-digit hex colors to 6-digit so bit operations work correctly
+  if (h.length === 3) {
+    h = h.split('').map(c => c + c).join('');
+  }
+  let num = parseInt(h, 16);
   let r = Math.min(255, Math.floor(((num >> 16) & 0xFF) * percent));
   let g = Math.min(255, Math.floor(((num >> 8) & 0xFF) * percent));
   let b = Math.min(255, Math.floor((num & 0xFF) * percent));

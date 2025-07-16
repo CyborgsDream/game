@@ -152,6 +152,15 @@ function drawTile(ctx, tile) {
   ctx.stroke();
 }
 
+function drawSky(ctx) {
+  const horizon = getVerticalOffset();
+  const grad = ctx.createLinearGradient(0, 0, 0, horizon);
+  grad.addColorStop(0, '#7ec0ee');
+  grad.addColorStop(1, '#87ceeb');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, horizon);
+}
+
 function getVerticalOffset() {
   const start = 0.78; // offset fraction when looking almost straight ahead
   const end = 0.5;    // offset fraction when looking straight down
@@ -259,6 +268,7 @@ function loop() {
   handleCameraInput();
   updateCamera();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSky(ctx);
   drawSlopedTerrain(ctx);
   updateDebugInfo();
   requestAnimationFrame(loop);

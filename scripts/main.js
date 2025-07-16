@@ -155,8 +155,9 @@ function drawTile(ctx, tile) {
 function drawSky(ctx) {
   const horizon = getVerticalOffset();
   const grad = ctx.createLinearGradient(0, 0, 0, horizon);
-  grad.addColorStop(0, '#7ec0ee');
-  grad.addColorStop(1, '#87ceeb');
+  // Use a dark gradient for the sky so the background isn't a bright blue
+  grad.addColorStop(0, '#000000');
+  grad.addColorStop(1, '#181c1f');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, horizon);
 }

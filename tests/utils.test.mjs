@@ -12,6 +12,11 @@ test('shadeColor darkens red at 50%', () => {
   assert.equal(shadeColor('#ff0000', 0.5), 'rgb(127,0,0)');
 });
 
+test('shadeColor handles 3-digit hex colors', () => {
+  assert.equal(shadeColor('#0f0', 1), 'rgb(0,255,0)');
+  assert.equal(shadeColor('#0f0', 0.5), 'rgb(0,127,0)');
+});
+
 test('getColor caching and determinism', () => {
   const c1 = getColor(2,3);
   const c2 = getColor(2,3);

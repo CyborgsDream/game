@@ -3,18 +3,9 @@ export function hash(x, y) {
 }
 
 export function computeHeight(x, y) {
-  // Generate a gentle rolling heightmap. The combination of sine, cosine
-  // and hashed noise produces terrain variation while keeping the results
-  // within the 0-3 range requested by the user.
-  const noise =
-    0.8 * Math.sin(x * 0.3 + y * 0.17) +
-    0.6 * Math.cos(x * 0.27 - y * 0.19) +
-    // Center the hash around 0 then scale it to keep the final height low
-    (hash(x, y) - 0.5) * 0.8;
-
-  const h = Math.floor(1.5 + noise);
-  // Clamp to ensure the terrain never exceeds the [0,3] bounds
-  return Math.min(3, Math.max(0, h));
+  // For this simplified build the terrain is completely flat at height 0.
+  // We keep the function for API compatibility but ignore the input.
+  return 0;
 }
 
 let colorMap = {};

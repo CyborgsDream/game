@@ -1,4 +1,4 @@
-// Game version: 012
+// Game version: 014
 import { hash, computeHeight, getColor, shadeColor } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
@@ -37,7 +37,7 @@ function getHeight(x, y) {
 
 // --- Camera State ---
 let camera = {
-  x: 0, y: 0, altitude: 7.5,
+  x: 0, y: 0, altitude: 10,
   speed: 0.14,
   yaw: Math.PI / 4,       // where the camera looks
   flyYaw: Math.PI / 4,    // direction of forward movement
@@ -101,20 +101,8 @@ function updateDebugInfo() {
 
 // --- Visibility Culling ---
 function isTileVisible(x, y) {
-  const centerX = x + 0.5;
-  const centerY = y + 0.5;
-  const centerH = computeHeight(centerX, centerY);
-  const dx = centerX - camera.x;
-  const dy = centerY - camera.y;
-  const distSq = dx * dx + dy * dy;
-  if (distSq === 0) return true;
-  const dot = (dx * cosYaw + dy * sinYaw) / Math.sqrt(distSq);
-  if (dot < cosHalfHFOV) return false;
-  const proj = project3D(centerX, centerY, centerH);
-  if (!proj) return false;
-  const [sx, sy] = proj;
-  const margin = 64;
-  return !(sx < -margin || sx > canvas.width + margin || sy < -margin || sy > canvas.height + margin);
+  // Visibility culling disabled; all tiles are considered visible.
+  return true;
 }
 
 // --- Terrain Drawing ---
@@ -152,15 +140,13 @@ function computeTileData(x, y) {
 }
 
 function drawTile(ctx, tile) {
-  ctx.fillStyle = tile.color;
   ctx.beginPath();
   ctx.moveTo(tile.pts[0][0], tile.pts[0][1]);
   ctx.lineTo(tile.pts[1][0], tile.pts[1][1]);
   ctx.lineTo(tile.pts[2][0], tile.pts[2][1]);
   ctx.lineTo(tile.pts[3][0], tile.pts[3][1]);
   ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = "#111a";
+  ctx.strokeStyle = "#0f0";
   ctx.stroke();
 }
 
@@ -220,13 +206,14 @@ window.addEventListener('blur', () => {
 
 // Mobile device orientation handling
 if (window.DeviceOrientationEvent) {
-  let baseAlpha = null;
+  let baseYaw = null;
   window.addEventListener('deviceorientation', (e) => {
-    if (baseAlpha === null && e.alpha !== null) {
-      baseAlpha = e.alpha;
-    }
-    if (e.alpha !== null && baseAlpha !== null) {
-      const yawRad = (e.alpha - baseAlpha) * Math.PI / 180;
+    // Account for screen orientation when interpreting alpha
+    const screenAngle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    if (e.alpha !== null) {
+      const yawDeg = e.alpha - screenAngle;
+      if (baseYaw === null) baseYaw = yawDeg;
+      const yawRad = (yawDeg - baseYaw) * Math.PI / 180;
       camera.yaw = yawRad;
       camera.flyYaw = yawRad;
     }

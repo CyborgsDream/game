@@ -1,7 +1,11 @@
 // Game version: 009
+import { hash, computeHeight, getColor, shadeColor } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const debugEl = document.getElementById('debug');
+let showDebug = true;
+debugEl.style.display = 'block';
 
 // --- Engine Parameters ---
 const tileSize = 32;
@@ -17,19 +21,7 @@ let cosHalfHFOV = Math.cos(horizontalFOV / 2);
 const perspectiveScale = 30;
 
 // --- Terrain Height Functions ---
-function hash(x, y) {
-  return Math.abs(Math.sin(x * 127.1 + y * 311.7) * 43758.5453) % 1;
-}
-
-// Raw height computation
-function computeHeight(x, y) {
-  return Math.floor(
-    2.2 +
-    2 * Math.sin(x * 0.25 + y * 0.17) +
-    1.5 * Math.cos(x * 0.19 - y * 0.23) +
-    0.8 * hash(x, y)
-  );
-}
+// Implemented in utils.mjs
 
 // Per-frame height cache
 let heightCache = {};
@@ -41,16 +33,7 @@ function getHeight(x, y) {
   return h;
 }
 
-// Persistent color map
-let colorMap = {};
-function getColor(x, y) {
-  const key = x + ',' + y;
-  if (colorMap[key]) return colorMap[key];
-  const palette = ["#aad", "#6b8", "#386", "#2c4", "#c94", "#7b5", "#a83"];
-  const idx = Math.floor(hash(x + 1.5, y - 2.7) * palette.length);
-  colorMap[key] = palette[idx];
-  return colorMap[key];
-}
+
 
 // --- Camera State ---
 let camera = {
@@ -105,6 +88,15 @@ function updateCamera() {
   // Always move forward in the direction of flight
   camera.x += sinFlyYaw * camera.speed;
   camera.y += cosFlyYaw * camera.speed;
+}
+
+function updateDebugInfo() {
+  if (!showDebug) return;
+  debugEl.textContent =
+    `x:${camera.x.toFixed(2)} y:${camera.y.toFixed(2)} ` +
+    `yaw:${(camera.yaw * 180 / Math.PI).toFixed(1)} ` +
+    `pitch:${(camera.pitch * 180 / Math.PI).toFixed(1)} ` +
+    `fov:${(fieldOfView * 180 / Math.PI).toFixed(1)}`;
 }
 
 // --- Visibility Culling ---
@@ -217,6 +209,10 @@ function shadeColor(hex, percent) {
 let keyState = {};
 document.addEventListener('keydown', e => {
   keyState[e.code] = true;
+  if (e.code === 'KeyD') {
+    showDebug = !showDebug;
+    debugEl.style.display = showDebug ? 'block' : 'none';
+  }
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Equal', 'Minus'].includes(e.code)) {
     e.preventDefault();
   }
@@ -252,7 +248,9 @@ function handleCameraInput() {
 function loop() {
   handleCameraInput();
   updateCamera();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);  drawSlopedTerrain(ctx);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSlopedTerrain(ctx);
+  updateDebugInfo();
   requestAnimationFrame(loop);
 }
 

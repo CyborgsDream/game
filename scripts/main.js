@@ -140,13 +140,15 @@ function computeTileData(x, y) {
 }
 
 function drawTile(ctx, tile) {
+  ctx.fillStyle = tile.color;
   ctx.beginPath();
   ctx.moveTo(tile.pts[0][0], tile.pts[0][1]);
   ctx.lineTo(tile.pts[1][0], tile.pts[1][1]);
   ctx.lineTo(tile.pts[2][0], tile.pts[2][1]);
   ctx.lineTo(tile.pts[3][0], tile.pts[3][1]);
   ctx.closePath();
-  ctx.strokeStyle = "#0f0";
+  ctx.fill();
+  ctx.strokeStyle = "#111a";
   ctx.stroke();
 }
 

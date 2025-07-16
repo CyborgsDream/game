@@ -1,5 +1,5 @@
 // Game version: 014
-import { hash, computeHeight, getColor, shadeColor } from './utils.mjs';
+import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -174,6 +174,7 @@ function drawSlopedTerrain(ctx) {
 
   let cx = camera.x, cy = camera.y;
   heightCache = {};
+  resetColorMap();
   let windowRadius = tilesInView / 2 + 5;
 
   let drawList = [];

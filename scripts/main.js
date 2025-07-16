@@ -196,14 +196,6 @@ function drawSlopedTerrain(ctx) {
   ctx.restore();
 }
 
-// --- Color Shading ---
-function shadeColor(hex, percent) {
-  let num = parseInt(hex.replace('#',''),16);
-  let r = Math.min(255, Math.floor(((num >> 16) & 0xFF) * percent));
-  let g = Math.min(255, Math.floor(((num >> 8) & 0xFF) * percent));
-  let b = Math.min(255, Math.floor((num & 0xFF) * percent));
-  return `rgb(${r},${g},${b})`;
-}
 
 // --- Keyboard Controls ---
 let keyState = {};

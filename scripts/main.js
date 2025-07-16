@@ -1,4 +1,4 @@
-// Game version: 011
+// Game version: 012
 import { hash, computeHeight, getColor, shadeColor } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');

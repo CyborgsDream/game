@@ -3,11 +3,13 @@ export function hash(x, y) {
 }
 
 export function computeHeight(x, y) {
+  // Produce gentler hills by reducing the amplitude of the
+  // sine/cosine components and pseudo-random noise.
   return Math.floor(
     2.2 +
-    2 * Math.sin(x * 0.25 + y * 0.17) +
-    1.5 * Math.cos(x * 0.19 - y * 0.23) +
-    0.8 * hash(x, y)
+    0.5 * Math.sin(x * 0.25 + y * 0.17) +
+    0.4 * Math.cos(x * 0.19 - y * 0.23) +
+    0.3 * hash(x, y)
   );
 }
 

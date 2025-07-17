@@ -3,9 +3,12 @@ export function hash(x, y) {
 }
 
 export function computeHeight(x, y) {
-  // For this simplified build the terrain is completely flat at height 0.
-  // We keep the function for API compatibility but ignore the input.
-  return 0;
+  return Math.floor(
+    2.2 +
+    2 * Math.sin(x * 0.25 + y * 0.17) +
+    1.5 * Math.cos(x * 0.19 - y * 0.23) +
+    0.8 * hash(x, y)
+  );
 }
 
 let colorMap = {};
@@ -23,12 +26,7 @@ export function getColor(x, y) {
 }
 
 export function shadeColor(hex, percent) {
-  let h = hex.replace('#','');
-  // Expand 3-digit hex colors to 6-digit so bit operations work correctly
-  if (h.length === 3) {
-    h = h.split('').map(c => c + c).join('');
-  }
-  let num = parseInt(h, 16);
+  let num = parseInt(hex.replace('#',''),16);
   let r = Math.min(255, Math.floor(((num >> 16) & 0xFF) * percent));
   let g = Math.min(255, Math.floor(((num >> 8) & 0xFF) * percent));
   let b = Math.min(255, Math.floor((num & 0xFF) * percent));

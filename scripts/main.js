@@ -1,5 +1,5 @@
-// Game version: 014
-import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
+// Game version: 010
+import { hash, computeHeight, getColor, shadeColor } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -9,7 +9,7 @@ debugEl.style.display = 'block';
 
 // --- Engine Parameters ---
 const tileSize = 32;
-const tilesInView = 72;
+const tilesInView = 36;
 // Perspective parameters
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
@@ -37,7 +37,7 @@ function getHeight(x, y) {
 
 // --- Camera State ---
 let camera = {
-  x: 0, y: 0, altitude: 10,
+  x: 0, y: 0, altitude: 7.5,
   speed: 0.14,
   yaw: Math.PI / 4,       // where the camera looks
   flyYaw: Math.PI / 4,    // direction of forward movement
@@ -66,10 +66,8 @@ function project3D(x, y, h) {
   let dz = h - camera.altitude;
 
   // Rotate around Z (yaw)
-  // Forward direction is (cosYaw, sinYaw)
-  // so local X (right) is (-sinYaw, cosYaw)
-  let px = dx * -sinYaw + dy * cosYaw;
-  let py = dx * cosYaw + dy * sinYaw;
+  let px = dx * cosYaw - dy * sinYaw;
+  let py = dx * sinYaw + dy * cosYaw;
 
   // Apply pitch
   let localY = py * cosPitch - dz * sinPitch;
@@ -101,8 +99,18 @@ function updateDebugInfo() {
 
 // --- Visibility Culling ---
 function isTileVisible(x, y) {
-  // Visibility culling disabled; all tiles are considered visible.
-  return true;
+  const centerX = x + 0.5;
+  const centerY = y + 0.5;
+  const dx = centerX - camera.x;
+  const dy = centerY - camera.y;
+  const distSq = dx * dx + dy * dy;
+  if (distSq === 0) return true;
+  const dot = (dx * cosYaw + dy * sinYaw) / Math.sqrt(distSq);
+  if (dot < cosHalfHFOV) return false;
+  const proj = project3D(centerX, centerY, camera.altitude);
+  if (!proj) return false;
+  const [sx, sy] = proj;
+  return !(sx < -canvas.width || sx > canvas.width || sy < -canvas.height || sy > canvas.height);
 }
 
 // --- Terrain Drawing ---
@@ -119,7 +127,7 @@ function computeTileData(x, y) {
 
   if (!nw || !ne || !se || !sw) return null;
 
-  const minDenom = 0;
+  const minDenom = 1;
   if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) return null;
 
   const pts = [nw, ne, se, sw];
@@ -152,30 +160,12 @@ function drawTile(ctx, tile) {
   ctx.stroke();
 }
 
-function drawSky(ctx) {
-  const horizon = getVerticalOffset();
-  const grad = ctx.createLinearGradient(0, 0, 0, horizon);
-  // Give the sky a blue gradient that differs from the terrain colors
-  grad.addColorStop(0, '#003c80');
-  grad.addColorStop(1, '#87ceeb');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, canvas.width, horizon);
-}
-
-function getVerticalOffset() {
-  const start = 0.78; // offset fraction when looking almost straight ahead
-  const end = 0.5;    // offset fraction when looking straight down
-  const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
-  return canvas.height * (start - (start - end) * t);
-}
-
 function drawSlopedTerrain(ctx) {
   ctx.save();
-  ctx.translate(canvas.width / 2, getVerticalOffset());
+  ctx.translate(canvas.width / 2, canvas.height * 0.78);
 
   let cx = camera.x, cy = camera.y;
   heightCache = {};
-  resetColorMap();
   let windowRadius = tilesInView / 2 + 5;
 
   let drawList = [];
@@ -226,14 +216,13 @@ window.addEventListener('blur', () => {
 
 // Mobile device orientation handling
 if (window.DeviceOrientationEvent) {
-  let baseYaw = null;
+  let baseAlpha = null;
   window.addEventListener('deviceorientation', (e) => {
-    // Account for screen orientation when interpreting alpha
-    const screenAngle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    if (e.alpha !== null) {
-      const yawDeg = e.alpha - screenAngle;
-      if (baseYaw === null) baseYaw = yawDeg;
-      const yawRad = (yawDeg - baseYaw) * Math.PI / 180;
+    if (baseAlpha === null && e.alpha !== null) {
+      baseAlpha = e.alpha;
+    }
+    if (e.alpha !== null && baseAlpha !== null) {
+      const yawRad = (e.alpha - baseAlpha) * Math.PI / 180;
       camera.yaw = yawRad;
       camera.flyYaw = yawRad;
     }
@@ -270,7 +259,6 @@ function loop() {
   handleCameraInput();
   updateCamera();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawSky(ctx);
   drawSlopedTerrain(ctx);
   updateDebugInfo();
   requestAnimationFrame(loop);

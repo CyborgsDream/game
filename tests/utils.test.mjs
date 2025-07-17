@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { computeHeight, shadeColor, getColor, resetColorMap } from '../scripts/utils.mjs';
 
 test('computeHeight deterministic values', () => {
-  assert.equal(computeHeight(0,0), 3);
-  assert.equal(computeHeight(1,1), 5);
-  assert.equal(computeHeight(-1,-1), 3);
+  assert.equal(computeHeight(0,0), 1);
+  assert.equal(computeHeight(1,1), 2);
+  assert.equal(computeHeight(-1,-1), 2);
 });
 
 test('shadeColor darkens red at 50%', () => {

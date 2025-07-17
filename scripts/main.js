@@ -101,16 +101,18 @@ function updateDebugInfo() {
 function isTileVisible(x, y) {
   const centerX = x + 0.5;
   const centerY = y + 0.5;
+  const centerH = computeHeight(centerX, centerY);
   const dx = centerX - camera.x;
   const dy = centerY - camera.y;
   const distSq = dx * dx + dy * dy;
   if (distSq === 0) return true;
   const dot = (dx * cosYaw + dy * sinYaw) / Math.sqrt(distSq);
   if (dot < cosHalfHFOV) return false;
-  const proj = project3D(centerX, centerY, camera.altitude);
+  const proj = project3D(centerX, centerY, centerH);
   if (!proj) return false;
   const [sx, sy] = proj;
-  return !(sx < -canvas.width || sx > canvas.width || sy < -canvas.height || sy > canvas.height);
+  const margin = 64;
+  return !(sx < -margin || sx > canvas.width + margin || sy < -margin || sy > canvas.height + margin);
 }
 
 // --- Terrain Drawing ---

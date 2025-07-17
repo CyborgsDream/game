@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { computeHeight, shadeColor, getColor, resetColorMap } from '../scripts/utils.mjs';
 
-test('computeHeight returns flat ground', () => {
-  assert.equal(computeHeight(0,0), 0);
-  assert.equal(computeHeight(1,1), 0);
-  assert.equal(computeHeight(-1,-1), 0);
+test('computeHeight deterministic values', () => {
+  assert.equal(computeHeight(0,0), 3);
+  assert.equal(computeHeight(1,1), 5);
+  assert.equal(computeHeight(-1,-1), 3);
 });
 
 test('shadeColor darkens red at 50%', () => {

@@ -1,4 +1,4 @@
-// Game version: 012
+// Game version: 013
 import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
@@ -37,8 +37,8 @@ function getHeight(x, y) {
 
 // --- Camera State ---
 let camera = {
-  // Start two meters above the ground at the world origin
-  x: 0, y: 0, altitude: 2,
+  // Camera starts high above the ground and continuously moves forward
+  x: 0, y: 0, altitude: 7.5,
   speed: 0.14,
   yaw: Math.PI / 4,       // where the camera looks
   flyYaw: Math.PI / 4,    // direction of forward movement
@@ -92,7 +92,9 @@ function project3D(x, y, h) {
 
 // --- Camera Update ---
 function updateCamera() {
-  // Camera movement disabled for mobile orientation control
+  // Always move forward in the direction of flight
+  camera.x += sinFlyYaw * camera.speed;
+  camera.y += cosFlyYaw * camera.speed;
 }
 
 function updateDebugInfo() {
@@ -195,11 +197,10 @@ function drawSky(ctx) {
 }
 
 function getVerticalOffset() {
-  // Place the horizon at the vertical center when looking straight ahead
-  // and move it upward as the camera tilts down. This keeps the ground
-  // aligned with the device orientation and a real-world floor at z=0.
-  const start = 0.5; // pitch = 0 -> horizon halfway up the screen
-  const end = 0.1;   // looking straight down -> horizon near the top
+  // Keep the horizon low enough that the camera appears above the terrain.
+  // When tilting down, shift it slightly higher to maintain perspective.
+  const start = 0.78; // looking almost straight ahead
+  const end = 0.5;    // looking straight down
   const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
   return canvas.height * (start - (start - end) * t);
 }

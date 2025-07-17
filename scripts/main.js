@@ -47,6 +47,12 @@ let camera = {
 let sinYaw = Math.sin(camera.yaw), cosYaw = Math.cos(camera.yaw);
 let sinFlyYaw = Math.sin(camera.flyYaw), cosFlyYaw = Math.cos(camera.flyYaw);
 let sinPitch = Math.sin(camera.pitch), cosPitch = Math.cos(camera.pitch);
+
+// Device orientation tuning
+const orientationFactor = 0.7;   // reduce sensitivity
+const smoothingFactor = 0.2;      // simple low-pass filter
+let smoothedYaw = camera.yaw;
+let smoothedPitch = camera.pitch;
 function updateOrientation() {
   sinYaw = Math.sin(camera.yaw);
   cosYaw = Math.cos(camera.yaw);
@@ -220,8 +226,12 @@ function drawSlopedTerrain(ctx) {
   drawList.sort((a, b) => b.depth - a.depth);
 
   const padL = 400, padR = 400, padT = 1200, padB = 1600;
-  const minX = -padL, maxX = canvas.width + padR;
-  const minY = -padT, maxY = canvas.height + padB;
+  const offsetX = canvas.width / 2;
+  const offsetY = getVerticalOffset();
+  const minX = -offsetX - padL;
+  const maxX = canvas.width - offsetX + padR;
+  const minY = -offsetY - padT;
+  const maxY = canvas.height - offsetY + padB;
 
   for (let tileInfo of drawList) {
     const data = computeTileData(tileInfo.x, tileInfo.y);
@@ -272,16 +282,19 @@ if (window.DeviceOrientationEvent) {
       if (baseAlpha === null) {
         baseAlpha = e.alpha;
       }
-      const yawRad = (e.alpha - baseAlpha) * Math.PI / 180;
-      camera.yaw = yawRad;
-      camera.flyYaw = yawRad;
+      const diff = ((e.alpha - baseAlpha + 540) % 360) - 180;
+      const yawRad = diff * Math.PI / 180 * orientationFactor;
+      smoothedYaw = smoothedYaw * (1 - smoothingFactor) + yawRad * smoothingFactor;
+      camera.yaw = smoothedYaw;
+      camera.flyYaw = smoothedYaw;
     }
     if (e.beta !== null) {
       // DeviceOrientation beta is 90° when the phone is held upright.
       // Subtract 90° so a vertical phone corresponds to looking straight ahead
       // and tilting the device downward increases the pitch angle.
-      const pitchRad = (90 - e.beta) * Math.PI / 180;
-      camera.pitch = Math.min(maxPitch, Math.max(minPitch, pitchRad));
+      const pitchRad = (90 - e.beta) * Math.PI / 180 * orientationFactor;
+      smoothedPitch = smoothedPitch * (1 - smoothingFactor) + pitchRad * smoothingFactor;
+      camera.pitch = Math.min(maxPitch, Math.max(minPitch, smoothedPitch));
     }
     updateOrientation();
   });

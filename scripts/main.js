@@ -171,12 +171,12 @@ function drawSky(ctx) {
 }
 
 function getVerticalOffset() {
-  // When pitch is 0 the horizon should be at the center of the screen and
-  // it moves upward as the device points downward. Interpolate linearly
-  // between center (0.5) and near the top of the screen.
-  const start = 0.5; // looking straight ahead
-  const end = 0.15;  // looking straight down
-  const t = Math.min(1, Math.max(0, camera.pitch / maxPitch));
+  // Keep the horizon low enough that the camera appears above the terrain.
+  // Use a simple interpolation between an offset near the bottom of the
+  // screen and a slightly higher position when looking straight down.
+  const start = 0.78; // looking almost straight ahead
+  const end = 0.5;    // looking straight down
+  const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
   return canvas.height * (start - (start - end) * t);
 }
 

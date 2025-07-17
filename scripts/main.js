@@ -9,7 +9,7 @@ debugEl.style.display = 'block';
 
 // --- Engine Parameters ---
 const tileSize = 32;
-const tilesInView = 72;
+const tilesInView = 36;
 // Perspective parameters
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
@@ -37,7 +37,7 @@ function getHeight(x, y) {
 
 // --- Camera State ---
 let camera = {
-  x: 0, y: 0, altitude: 10,
+  x: 0, y: 0, altitude: 7.5,
   speed: 0.14,
   yaw: Math.PI / 4,       // where the camera looks
   flyYaw: Math.PI / 4,    // direction of forward movement

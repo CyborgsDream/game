@@ -1,4 +1,4 @@
-// Game version: 010
+// Game version: 011
 import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
@@ -239,14 +239,25 @@ window.addEventListener('blur', () => {
   keyState = {};
 });
 
-// Mobile device orientation handling
+// Mobile device orientation handling with calibration
 if (window.DeviceOrientationEvent) {
   let baseAlpha = null;
+  let lastAlpha = null;
+  const calibrateBtn = document.getElementById('calibrateBtn');
+  if (calibrateBtn) {
+    calibrateBtn.addEventListener('click', () => {
+      if (lastAlpha !== null) {
+        baseAlpha = lastAlpha;
+      }
+    });
+  }
+
   window.addEventListener('deviceorientation', (e) => {
-    if (baseAlpha === null && e.alpha !== null) {
-      baseAlpha = e.alpha;
-    }
-    if (e.alpha !== null && baseAlpha !== null) {
+    if (e.alpha !== null) {
+      lastAlpha = e.alpha;
+      if (baseAlpha === null) {
+        baseAlpha = e.alpha;
+      }
       const yawRad = (e.alpha - baseAlpha) * Math.PI / 180;
       camera.yaw = yawRad;
       camera.flyYaw = yawRad;

@@ -2,17 +2,11 @@ export function hash(x, y) {
   return Math.abs(Math.sin(x * 127.1 + y * 311.7) * 43758.5453) % 1;
 }
 
-export function computeHeight(x, y) {
-  // Generate a gentle rolling heightmap.  The combination of sine, cosine and
-  // hashed noise keeps variation interesting while clamping the range to 0-3 so
-  // the terrain never rises too high above the camera.
-  const noise =
-    0.8 * Math.sin(x * 0.3 + y * 0.17) +
-    0.6 * Math.cos(x * 0.27 - y * 0.19) +
-    (hash(x, y) - 0.5) * 0.8;
-
-  const h = Math.floor(1.5 + noise);
-  return Math.min(3, Math.max(0, h));
+export function computeHeight(_x, _y) {
+  // Flat plane at z=0 for all coordinates to represent a real world floor
+  // aligned with the horizon. This simplifies the projection logic so the
+  // virtual grid matches the physical ground level.
+  return 0;
 }
 
 let colorMap = {};

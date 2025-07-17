@@ -1,4 +1,4 @@
-// Game version: 011
+// Game version: 012
 import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
@@ -37,7 +37,8 @@ function getHeight(x, y) {
 
 // --- Camera State ---
 let camera = {
-  x: 0, y: 0, altitude: 7.5,
+  // Start two meters above the ground at the world origin
+  x: 0, y: 0, altitude: 2,
   speed: 0.14,
   yaw: Math.PI / 4,       // where the camera looks
   flyYaw: Math.PI / 4,    // direction of forward movement
@@ -144,20 +145,33 @@ function computeTileData(x, y) {
     maxY: Math.max(...ys)
   };
 
-  const slopeY = ((hNE + hSE) - (hNW + hSW)) / 2;
-  const shade = Math.max(0.7, 1.1 - slopeY * 0.12);
-  const color = shadeColor(getColor(x, y), shade);
-
-  return {pts, bounds, color};
+  // Use a simple two-tone color scheme so each tile is split into
+  // two triangles with slightly different shades.
+  const base = getColor(x, y);
+  return {
+    pts,
+    bounds,
+    color1: shadeColor(base, 1.0),
+    color2: shadeColor(base, 0.85)
+  };
 }
 
 function drawTile(ctx, tile) {
-  ctx.fillStyle = tile.color;
+  const [nw, ne, se, sw] = tile.pts;
+  // First triangle NW-NE-SE
+  ctx.fillStyle = tile.color1;
   ctx.beginPath();
-  ctx.moveTo(tile.pts[0][0], tile.pts[0][1]);
-  ctx.lineTo(tile.pts[1][0], tile.pts[1][1]);
-  ctx.lineTo(tile.pts[2][0], tile.pts[2][1]);
-  ctx.lineTo(tile.pts[3][0], tile.pts[3][1]);
+  ctx.moveTo(nw[0], nw[1]);
+  ctx.lineTo(ne[0], ne[1]);
+  ctx.lineTo(se[0], se[1]);
+  ctx.closePath();
+  ctx.fill();
+  // Second triangle SE-SW-NW
+  ctx.fillStyle = tile.color2;
+  ctx.beginPath();
+  ctx.moveTo(se[0], se[1]);
+  ctx.lineTo(sw[0], sw[1]);
+  ctx.lineTo(nw[0], nw[1]);
   ctx.closePath();
   ctx.fill();
   ctx.strokeStyle = "#111a";
@@ -175,11 +189,11 @@ function drawSky(ctx) {
 }
 
 function getVerticalOffset() {
-  // Keep the horizon low enough that the camera appears above the terrain.
-  // Use a simple interpolation between an offset near the bottom of the
-  // screen and a slightly higher position when looking straight down.
-  const start = 0.78; // looking almost straight ahead
-  const end = 0.5;    // looking straight down
+  // Place the horizon at the vertical center when looking straight ahead
+  // and move it upward as the camera tilts down. This keeps the ground
+  // aligned with the device orientation and a real-world floor at z=0.
+  const start = 0.5; // pitch = 0 -> horizon halfway up the screen
+  const end = 0.1;   // looking straight down -> horizon near the top
   const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
   return canvas.height * (start - (start - end) * t);
 }

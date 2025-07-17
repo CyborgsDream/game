@@ -2,11 +2,13 @@ export function hash(x, y) {
   return Math.abs(Math.sin(x * 127.1 + y * 311.7) * 43758.5453) % 1;
 }
 
-export function computeHeight(_x, _y) {
-  // Flat plane at z=0 for all coordinates to represent a real world floor
-  // aligned with the horizon. This simplifies the projection logic so the
-  // virtual grid matches the physical ground level.
-  return 0;
+export function computeHeight(x, y) {
+  return Math.floor(
+    2.2 +
+    2 * Math.sin(x * 0.25 + y * 0.17) +
+    1.5 * Math.cos(x * 0.19 - y * 0.23) +
+    0.8 * hash(x, y)
+  );
 }
 
 let colorMap = {};

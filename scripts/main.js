@@ -110,7 +110,9 @@ function isTileVisible(x, y) {
   if (dot < cosHalfHFOV) return false;
   const proj = project3D(centerX, centerY, centerH);
   if (!proj) return false;
-  const [sx, sy] = proj;
+  let [sx, sy] = proj;
+  sx += canvas.width / 2;
+  sy += getVerticalOffset();
   const margin = 64;
   return !(sx < -margin || sx > canvas.width + margin || sy < -margin || sy > canvas.height + margin);
 }

@@ -9,7 +9,7 @@ debugEl.style.display = 'block';
 
 // --- Engine Parameters ---
 const tileSize = 32;
-const tilesInView = 72;
+const tilesInView = 96; // increase draw distance to avoid tiles popping
 // Perspective parameters
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
@@ -56,7 +56,7 @@ function updateOrientation() {
   horizontalFOV = 2 * Math.atan(Math.tan(fieldOfView / 2) * canvas.width / canvas.height);
   cosHalfHFOV = Math.cos(horizontalFOV / 2);
 }
-const minPitch = Math.PI / 15;
+const minPitch = 0; // allow looking straight ahead
 const maxPitch = Math.PI / 2.1;
 
 // --- 3D Projection ---
@@ -171,9 +171,12 @@ function drawSky(ctx) {
 }
 
 function getVerticalOffset() {
-  const start = 0.78; // offset fraction when looking almost straight ahead
-  const end = 0.5;    // offset fraction when looking straight down
-  const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
+  // When pitch is 0 the horizon should be at the center of the screen and
+  // it moves upward as the device points downward. Interpolate linearly
+  // between center (0.5) and near the top of the screen.
+  const start = 0.5; // looking straight ahead
+  const end = 0.15;  // looking straight down
+  const t = Math.min(1, Math.max(0, camera.pitch / maxPitch));
   return canvas.height * (start - (start - end) * t);
 }
 

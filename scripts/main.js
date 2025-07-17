@@ -1,5 +1,5 @@
 // Game version: 010
-import { hash, computeHeight, getColor, shadeColor } from './utils.mjs';
+import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -9,7 +9,7 @@ debugEl.style.display = 'block';
 
 // --- Engine Parameters ---
 const tileSize = 32;
-const tilesInView = 36;
+const tilesInView = 72;
 // Perspective parameters
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
@@ -127,7 +127,7 @@ function computeTileData(x, y) {
 
   if (!nw || !ne || !se || !sw) return null;
 
-  const minDenom = 1;
+  const minDenom = 0;
   if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) return null;
 
   const pts = [nw, ne, se, sw];
@@ -160,12 +160,30 @@ function drawTile(ctx, tile) {
   ctx.stroke();
 }
 
+function drawSky(ctx) {
+  const horizon = getVerticalOffset();
+  const grad = ctx.createLinearGradient(0, 0, 0, horizon);
+  // Give the sky a blue gradient that differs from the terrain colors
+  grad.addColorStop(0, '#003c80');
+  grad.addColorStop(1, '#87ceeb');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, horizon);
+}
+
+function getVerticalOffset() {
+  const start = 0.78; // offset fraction when looking almost straight ahead
+  const end = 0.5;    // offset fraction when looking straight down
+  const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
+  return canvas.height * (start - (start - end) * t);
+}
+
 function drawSlopedTerrain(ctx) {
   ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height * 0.78);
+  ctx.translate(canvas.width / 2, getVerticalOffset());
 
   let cx = camera.x, cy = camera.y;
   heightCache = {};
+  resetColorMap();
   let windowRadius = tilesInView / 2 + 5;
 
   let drawList = [];
@@ -259,6 +277,7 @@ function loop() {
   handleCameraInput();
   updateCamera();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSky(ctx);
   drawSlopedTerrain(ctx);
   updateDebugInfo();
   requestAnimationFrame(loop);

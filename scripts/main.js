@@ -9,7 +9,7 @@ debugEl.style.display = 'block';
 
 // --- Engine Parameters ---
 const tileSize = 32;
-const tilesInView = 36;
+const tilesInView = 72;
 // Perspective parameters
 let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
@@ -119,7 +119,7 @@ function computeTileData(x, y) {
 
   if (!nw || !ne || !se || !sw) return null;
 
-  const minDenom = 1;
+  const minDenom = 0;
   if (nw[2] < minDenom || ne[2] < minDenom || se[2] < minDenom || sw[2] < minDenom) return null;
 
   const pts = [nw, ne, se, sw];
@@ -155,9 +155,9 @@ function drawTile(ctx, tile) {
 function drawSky(ctx) {
   const horizon = getVerticalOffset();
   const grad = ctx.createLinearGradient(0, 0, 0, horizon);
-  // Use a dark gradient for the sky so the background isn't a bright blue
-  grad.addColorStop(0, '#000000');
-  grad.addColorStop(1, '#181c1f');
+  // Give the sky a blue gradient that differs from the terrain colors
+  grad.addColorStop(0, '#003c80');
+  grad.addColorStop(1, '#87ceeb');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, horizon);
 }

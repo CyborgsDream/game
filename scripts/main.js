@@ -248,7 +248,10 @@ if (window.DeviceOrientationEvent) {
       camera.flyYaw = yawRad;
     }
     if (e.beta !== null) {
-      const pitchRad = e.beta * Math.PI / 180;
+      // DeviceOrientation beta is 90° when the phone is held upright.
+      // Subtract 90° so a vertical phone corresponds to looking straight ahead
+      // and tilting the device downward increases the pitch angle.
+      const pitchRad = (90 - e.beta) * Math.PI / 180;
       camera.pitch = Math.min(maxPitch, Math.max(minPitch, pitchRad));
     }
     updateOrientation();

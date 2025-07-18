@@ -290,10 +290,10 @@ if (window.DeviceOrientationEvent) {
       camera.flyYaw = smoothedYaw;
     }
     if (e.beta !== null) {
-      // DeviceOrientation beta is 90° when the phone is held upright.
-      // Subtract 90° so a vertical phone corresponds to looking straight ahead
-      // and tilting the device downward increases the pitch angle.
-      const pitchRad = (90 - e.beta) * Math.PI / 180 * orientationFactor;
+      // On most devices beta is 0° when the phone is vertical and 90° when
+      // it is laid flat. Use beta directly so a vertical phone looks straight
+      // ahead and tilting it down increases the pitch angle.
+      const pitchRad = e.beta * Math.PI / 180 * orientationFactor;
       smoothedPitch = smoothedPitch * (1 - smoothingFactor) + pitchRad * smoothingFactor;
       camera.pitch = Math.min(maxPitch, Math.max(minPitch, smoothedPitch));
     }

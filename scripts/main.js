@@ -93,8 +93,10 @@ function project3D(x, y, h) {
 // --- Camera Update ---
 function updateCamera() {
   // Always move forward in the direction of flight
-  camera.x += sinFlyYaw * camera.speed;
-  camera.y += cosFlyYaw * camera.speed;
+  // Align motion with the view direction so the camera
+  // travels toward where it is looking.
+  camera.x += cosFlyYaw * camera.speed;
+  camera.y += sinFlyYaw * camera.speed;
 }
 
 function updateDebugInfo() {
@@ -199,8 +201,10 @@ function drawSky(ctx) {
 function getVerticalOffset() {
   // Keep the horizon low enough that the camera appears above the terrain.
   // When tilting down, shift it slightly higher to maintain perspective.
-  const start = 0.78; // looking almost straight ahead
-  const end = 0.5;    // looking straight down
+  // Slightly raise the horizon so the scene appears
+  // more centered on screen and the camera feels higher.
+  const start = 0.68; // looking almost straight ahead
+  const end = 0.45;   // looking straight down
   const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
   return canvas.height * (start - (start - end) * t);
 }

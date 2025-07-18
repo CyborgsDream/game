@@ -1,4 +1,4 @@
-// Game version: 014
+// Game version: 020 - yes1 huge leap
 import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');

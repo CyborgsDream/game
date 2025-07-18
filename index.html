@@ -47,10 +47,12 @@
       floorGrid.material=floorMat;
       scene.add(floorGrid);
 
-      raisedFloor=new THREE.GridHelper(floorSize,floorDiv,0x0000ff,0x0000ff);
-      raisedFloor.material=floorMat.clone();
-      raisedFloor.material.color.set(0x0000ff);
-      raisedFloor.position.y=GRID_SPACING;
+      const platformHeight=GRID_SPACING*0.11;
+      const platformSeg=floorDiv*2;
+      const boxGeo=new THREE.BoxGeometry(floorSize,platformHeight,floorSize,platformSeg,1,platformSeg);
+      const boxMat=new THREE.MeshBasicMaterial({color:0x0000ff,wireframe:true});
+      raisedFloor=new THREE.Mesh(boxGeo,boxMat);
+      raisedFloor.position.y=GRID_SPACING*0.33+platformHeight/2;
       scene.add(raisedFloor);
 
       wallGrids=new THREE.Group();
@@ -118,7 +120,7 @@
         const segments=50;
         waterGeom=new THREE.PlaneGeometry(size,size,segments,segments);
         waterGeom.rotateX(-Math.PI/2);
-        const mat=new THREE.MeshPhongMaterial({color:0x0044ff,shininess:80,transparent:true,opacity:0.6,side:THREE.DoubleSide});
+        const mat=new THREE.MeshBasicMaterial({color:0x0044ff,transparent:true,opacity:0.6,wireframe:true});
         waterMesh=new THREE.Mesh(waterGeom,mat);
         waterMesh.position.y=-0.01;
         scene.add(waterMesh);
@@ -151,7 +153,11 @@
       function updateRaisedFloor(time){
         if(!raisedFloor) return;
         const t=(Math.sin(time)+1)/2;
-        raisedFloor.position.y=GRID_SPACING*(1+2*t);
+        const base=GRID_SPACING*0.33;
+        const amp=GRID_SPACING*0.33;
+        raisedFloor.position.y=base+amp*t+raisedFloor.geometry.parameters.height/2;
+        const hue=(time*0.2)%1;
+        raisedFloor.material.color.setHSL(hue,1,0.5);
       }
 
     function handleOrientation(e){

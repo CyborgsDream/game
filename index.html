@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TRON Combined 3D Demo</title>
+  <title>GAME v020</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body,html{margin:0;padding:0;overflow:hidden;background:#000;}
@@ -42,6 +42,11 @@
       const floorGrid=new THREE.GridHelper(floorSize,floorDiv,0xff8800,0x884400);
       floorGrid.material=floorMat;
       scene.add(floorGrid);
+
+      const raisedFloor=new THREE.GridHelper(floorSize,floorDiv,0xff8800,0x884400);
+      raisedFloor.material=floorMat.clone();
+      raisedFloor.position.y=GRID_SPACING*3;
+      scene.add(raisedFloor);
 
       wallGrids=new THREE.Group();
       const wallSize=ROOM_SIZE;

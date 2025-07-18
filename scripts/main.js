@@ -4,6 +4,16 @@ import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './util
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const debugEl = document.getElementById('debug');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
+  updateOrientation();
+}
+
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', resizeCanvas);
 let showDebug = true;
 debugEl.style.display = 'block';
 
@@ -337,4 +347,7 @@ function loop() {
 }
 
 // Start the render loop after the DOM has finished loading
-window.addEventListener('load', loop);
+window.addEventListener('load', () => {
+  resizeCanvas();
+  loop();
+});

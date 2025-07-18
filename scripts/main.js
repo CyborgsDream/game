@@ -52,17 +52,20 @@ let camera = {
   speed: 0.14,
   yaw: Math.PI / 4,       // where the camera looks
   flyYaw: Math.PI / 4,    // direction of forward movement
-  pitch: Math.PI / 7
+  pitch: Math.PI / 7,
+  roll: 0                 // new: rotation around the viewing axis
 };
 let sinYaw = Math.sin(camera.yaw), cosYaw = Math.cos(camera.yaw);
 let sinFlyYaw = Math.sin(camera.flyYaw), cosFlyYaw = Math.cos(camera.flyYaw);
 let sinPitch = Math.sin(camera.pitch), cosPitch = Math.cos(camera.pitch);
+let sinRoll = Math.sin(camera.roll), cosRoll = Math.cos(camera.roll);
 
 // Device orientation tuning
 const orientationFactor = 0.7;   // reduce sensitivity
 const smoothingFactor = 0.2;      // simple low-pass filter
 let smoothedYaw = camera.yaw;
 let smoothedPitch = camera.pitch;
+let smoothedRoll = camera.roll;
 function updateOrientation() {
   sinYaw = Math.sin(camera.yaw);
   cosYaw = Math.cos(camera.yaw);
@@ -70,6 +73,8 @@ function updateOrientation() {
   cosFlyYaw = Math.cos(camera.flyYaw);
   sinPitch = Math.sin(camera.pitch);
   cosPitch = Math.cos(camera.pitch);
+  sinRoll = Math.sin(camera.roll);
+  cosRoll = Math.cos(camera.roll);
   horizontalFOV = 2 * Math.atan(Math.tan(fieldOfView / 2) * canvas.width / canvas.height);
   cosHalfHFOV = Math.cos(horizontalFOV / 2);
 }
@@ -115,6 +120,7 @@ function updateDebugInfo() {
     `x:${camera.x.toFixed(2)} y:${camera.y.toFixed(2)} ` +
     `yaw:${(camera.yaw * 180 / Math.PI).toFixed(1)} ` +
     `pitch:${(camera.pitch * 180 / Math.PI).toFixed(1)} ` +
+    `roll:${(camera.roll * 180 / Math.PI).toFixed(1)} ` +
     `fov:${(fieldOfView * 180 / Math.PI).toFixed(1)}`;
 }
 
@@ -200,12 +206,17 @@ function drawTile(ctx, tile) {
 
 function drawSky(ctx) {
   const horizon = getVerticalOffset();
+  ctx.save();
+  ctx.translate(canvas.width / 2, horizon);
+  ctx.rotate(camera.roll);
+  ctx.translate(-canvas.width / 2, -horizon);
   const grad = ctx.createLinearGradient(0, 0, 0, horizon);
   // Give the sky a blue gradient that differs from the terrain colors
   grad.addColorStop(0, '#003c80');
   grad.addColorStop(1, '#87ceeb');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, horizon);
+  ctx.restore();
 }
 
 function getVerticalOffset() {
@@ -222,6 +233,7 @@ function getVerticalOffset() {
 function drawSlopedTerrain(ctx) {
   ctx.save();
   ctx.translate(canvas.width / 2, getVerticalOffset());
+  ctx.rotate(camera.roll);
 
   let cx = camera.x, cy = camera.y;
   heightCache = {};
@@ -310,6 +322,11 @@ if (window.DeviceOrientationEvent) {
       const pitchRad = e.beta * Math.PI / 180 * orientationFactor;
       smoothedPitch = smoothedPitch * (1 - smoothingFactor) + pitchRad * smoothingFactor;
       camera.pitch = Math.min(maxPitch, Math.max(minPitch, smoothedPitch));
+    }
+    if (e.gamma !== null) {
+      const rollRad = e.gamma * Math.PI / 180 * orientationFactor;
+      smoothedRoll = smoothedRoll * (1 - smoothingFactor) + rollRad * smoothingFactor;
+      camera.roll = smoothedRoll;
     }
     updateOrientation();
   });

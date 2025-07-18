@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAME v020</title>
+  <title>GAME v021</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body,html{margin:0;padding:0;overflow:hidden;background:#000;}
@@ -16,7 +16,7 @@
   <button id="permissionBtn" style="display:none;">Enable Motion</button>
   <button id="calibrateBtn" style="display:none;top:60px;left:20px;position:absolute;padding:10px 20px;font-family:sans-serif;font-size:16px;">Calibrate</button>
   <script>
-    let scene,camera,renderer,wallGrids,verticalLines;
+    let scene,camera,renderer,wallGrids,verticalLines,raisedFloor;
     let waterGeom,waterMesh;
     let orientationOffsetQuat=new THREE.Quaternion();
     let lastQuat=new THREE.Quaternion();
@@ -36,6 +36,9 @@
       const light=new THREE.PointLight(0xffffff,1,100);
       light.position.set(0,5,0);
       scene.add(light);
+      const sun=new THREE.DirectionalLight(0xffffff,0.8);
+      sun.position.set(5,10,2);
+      scene.add(sun);
 
       const floorSize=ROOM_SIZE;
       const floorDiv=30;
@@ -44,7 +47,7 @@
       floorGrid.material=floorMat;
       scene.add(floorGrid);
 
-      const raisedFloor=new THREE.GridHelper(floorSize,floorDiv,0x0000ff,0x0000ff);
+      raisedFloor=new THREE.GridHelper(floorSize,floorDiv,0x0000ff,0x0000ff);
       raisedFloor.material=floorMat.clone();
       raisedFloor.material.color.set(0x0000ff);
       raisedFloor.position.y=GRID_SPACING;
@@ -113,29 +116,10 @@
       function createWaterSurface(){
         const size=ROOM_SIZE;
         const segments=50;
-        const half=size/2;
-        const step=size/segments;
-        const vertices=[];
-        for(let i=0;i<=segments;i++){
-          const z=-half+i*step;
-          for(let j=0;j<segments;j++){
-            const x0=-half+j*step;
-            const x1=x0+step;
-            vertices.push(x0,0,z,x1,0,z);
-          }
-        }
-        for(let j=0;j<=segments;j++){
-          const x=-half+j*step;
-          for(let i=0;i<segments;i++){
-            const z0=-half+i*step;
-            const z1=z0+step;
-            vertices.push(x,0,z0,x,0,z1);
-          }
-        }
-        waterGeom=new THREE.BufferGeometry();
-        waterGeom.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-        const mat=new THREE.LineBasicMaterial({color:0x0044ff,transparent:true,opacity:0.6,depthWrite:false});
-        waterMesh=new THREE.LineSegments(waterGeom,mat);
+        waterGeom=new THREE.PlaneGeometry(size,size,segments,segments);
+        waterGeom.rotateX(-Math.PI/2);
+        const mat=new THREE.MeshPhongMaterial({color:0x0044ff,shininess:80,transparent:true,opacity:0.6,side:THREE.DoubleSide});
+        waterMesh=new THREE.Mesh(waterGeom,mat);
         waterMesh.position.y=-0.01;
         scene.add(waterMesh);
       }
@@ -161,6 +145,13 @@
           pos.setY(i,y);
         }
         pos.needsUpdate=true;
+        waterGeom.computeVertexNormals();
+      }
+
+      function updateRaisedFloor(time){
+        if(!raisedFloor) return;
+        const t=(Math.sin(time)+1)/2;
+        raisedFloor.position.y=GRID_SPACING*(1+2*t);
       }
 
     function handleOrientation(e){
@@ -199,6 +190,7 @@
       requestAnimationFrame(animate);
       const time=performance.now()*0.001;
       updateWaterSurface(time);
+      updateRaisedFloor(time);
       renderer.render(scene,camera);
     }
 

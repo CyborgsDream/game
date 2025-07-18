@@ -51,11 +51,25 @@
       scene.add(floorGrid);
 
       const platformHeight=GRID_SPACING*0.11;
-      const platformSeg=floorDiv*2;
-      const boxGeo=new THREE.BoxGeometry(floorSize,platformHeight,floorSize,platformSeg,1,platformSeg);
-      const boxMat=new THREE.MeshBasicMaterial({color:0x0000ff,wireframe:true});
-      raisedFloor=new THREE.Mesh(boxGeo,boxMat);
-      raisedFloor.position.y=GRID_SPACING*0.33+platformHeight/2;
+      const tileCount=10;
+      const tileSize=floorSize/tileCount;
+      raisedFloor=new THREE.Group();
+      for(let i=0;i<tileCount;i++){
+        for(let j=0;j<tileCount;j++){
+          const geo=new THREE.BoxGeometry(tileSize,platformHeight,tileSize);
+          const mat=new THREE.MeshBasicMaterial({color:0x0000ff,wireframe:true});
+          const tile=new THREE.Mesh(geo,mat);
+          tile.position.set(
+            -floorSize/2+tileSize/2+i*tileSize,
+            platformHeight/2,
+            -floorSize/2+tileSize/2+j*tileSize
+          );
+          tile.userData.baseColor=0x0000ff;
+          tile.userData.alive=true;
+          raisedFloor.add(tile);
+        }
+      }
+      raisedFloor.position.y=GRID_SPACING*0.33;
       scene.add(raisedFloor);
 
       wallGrids=new THREE.Group();
@@ -124,9 +138,18 @@
         const segments=50;
         waterGeom=new THREE.PlaneGeometry(size,size,segments,segments);
         waterGeom.rotateX(-Math.PI/2);
-        const mat=new THREE.MeshBasicMaterial({color:0x0044ff,transparent:true,opacity:0.6,wireframe:true});
+        const colors=new Float32Array(waterGeom.attributes.position.count*3);
+        const baseColor=new THREE.Color(0x0044ff);
+        for(let i=0;i<waterGeom.attributes.position.count;i++){
+          colors[i*3]=baseColor.r;
+          colors[i*3+1]=baseColor.g;
+          colors[i*3+2]=baseColor.b;
+        }
+        waterGeom.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+        const mat=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:0.6});
         waterMesh=new THREE.Mesh(waterGeom,mat);
         waterMesh.position.y=-0.01;
+        waterMesh.userData.baseColor=colors.slice();
         scene.add(waterMesh);
       }
 
@@ -159,9 +182,11 @@
         const t=(Math.sin(time)+1)/2;
         const base=GRID_SPACING*0.33;
         const amp=GRID_SPACING*0.33;
-        raisedFloor.position.y=base+amp*t+raisedFloor.geometry.parameters.height/2;
+        raisedFloor.position.y=base+amp*t;
         const hue=(time*0.2)%1;
-        raisedFloor.material.color.setHSL(hue,1,0.5);
+        raisedFloor.children.forEach(tile=>{
+          tile.material.color.setHSL(hue,1,0.5);
+        });
       }
 
       function handleClick(event){
@@ -192,7 +217,7 @@
         ring.position.copy(point);
         const start=performance.now()*0.001;
         scene.add(ring);
-        explosions.push({ring,center:point.clone(),start});
+        explosions.push({ring,center:point.clone(),start,affected:new Set()});
       }
 
       function updateExplosions(time){
@@ -202,11 +227,12 @@
           const t=time-exp.start;
           exp.ring.scale.setScalar(1+t*5);
           exp.ring.material.opacity=Math.max(0,1-t*0.5);
-          applyDistortion(exp.center,t);
+          applyDistortion(exp.center,t,exp);
           if(t>2){
             scene.remove(exp.ring);
             exp.ring.geometry.dispose();
             exp.ring.material.dispose();
+            exp.affected.forEach(tile=>{tile.visible=false;tile.userData.alive=false;});
             explosions.splice(i,1);
           }
         }
@@ -216,28 +242,27 @@
         if(waterGeom && waterGeom.userData.base){
           const pos=waterGeom.attributes.position;
           const base=waterGeom.userData.base;
+          const colors=waterGeom.attributes.color;
+          const baseCol=waterMesh.userData.baseColor;
           for(let i=0;i<pos.count;i++){
             pos.setXYZ(i,base[i*3],base[i*3+1],base[i*3+2]);
+            colors.setXYZ(i,baseCol[i*3],baseCol[i*3+1],baseCol[i*3+2]);
           }
           pos.needsUpdate=true;
-        }
-        if(raisedFloor && raisedFloor.geometry.userData.base){
-          const pos=raisedFloor.geometry.attributes.position;
-          const base=raisedFloor.geometry.userData.base;
-          for(let i=0;i<pos.count;i++){
-            pos.setXYZ(i,base[i*3],base[i*3+1],base[i*3+2]);
-          }
-          pos.needsUpdate=true;
+          colors.needsUpdate=true;
         }
       }
 
-      function applyDistortion(center,t){
+      function applyDistortion(center,t,exp){
         const radius=t*5;
         const strength=Math.max(0,1-t*0.5)*0.5;
         if(waterGeom){
           const pos=waterGeom.attributes.position;
+          const colors=waterGeom.attributes.color;
           if(!waterGeom.userData.base) waterGeom.userData.base=pos.array.slice();
+          if(!waterMesh.userData.baseColor) waterMesh.userData.baseColor=colors.array.slice();
           const base=waterGeom.userData.base;
+          const baseCol=waterMesh.userData.baseColor;
           for(let i=0;i<pos.count;i++){
             const bx=base[i*3];
             const by=base[i*3+1];
@@ -246,28 +271,28 @@
             let y=by;
             if(dist<radius){
               y+= (radius-dist)/radius*strength;
+              colors.setXYZ(i,1,0,0);
+            }else{
+              colors.setXYZ(i,baseCol[i*3],baseCol[i*3+1],baseCol[i*3+2]);
             }
             pos.setXYZ(i,bx,y,bz);
           }
           pos.needsUpdate=true;
+          colors.needsUpdate=true;
           waterGeom.computeVertexNormals();
         }
         if(raisedFloor){
-          const pos=raisedFloor.geometry.attributes.position;
-          if(!raisedFloor.geometry.userData.base) raisedFloor.geometry.userData.base=pos.array.slice();
-          const base=raisedFloor.geometry.userData.base;
-          for(let i=0;i<pos.count;i++){
-            const bx=base[i*3];
-            const by=base[i*3+1];
-            const bz=base[i*3+2];
-            const dist=Math.hypot(bx-center.x,bz-center.z);
-            let y=by;
+          raisedFloor.children.forEach(tile=>{
+            if(!tile.userData.alive) return;
+            const worldPos=tile.getWorldPosition(new THREE.Vector3());
+            const dist=Math.hypot(worldPos.x-center.x,worldPos.z-center.z);
             if(dist<radius){
-              y+= (radius-dist)/radius*strength;
+              tile.material.color.set(0xff0000);
+              if(exp) exp.affected.add(tile);
+            }else{
+              tile.material.color.set(tile.userData.baseColor);
             }
-            pos.setXYZ(i,bx,y,bz);
-          }
-          pos.needsUpdate=true;
+          });
         }
       }
 

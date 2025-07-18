@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAME v021</title>
+  <title>GAME v022</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body,html{margin:0;padding:0;overflow:hidden;background:#000;}
@@ -21,6 +21,9 @@
     let orientationOffsetQuat=new THREE.Quaternion();
     let lastQuat=new THREE.Quaternion();
     let offsetInitialized=false;
+    let explosions=[];
+    const raycaster=new THREE.Raycaster();
+    const clickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
     const ROOM_SIZE=30;
     const GRID_SPACING=10;
     function initScene(){
@@ -70,6 +73,7 @@
       createHorizontalLines();
       createWaterSurface();
       window.addEventListener('resize',onResize);
+      renderer.domElement.addEventListener('click',handleClick);
     }
 
     function createVerticalLines(){
@@ -160,6 +164,43 @@
         raisedFloor.material.color.setHSL(hue,1,0.5);
       }
 
+      function handleClick(event){
+        const rect=renderer.domElement.getBoundingClientRect();
+        const mouse=new THREE.Vector2(
+          ((event.clientX-rect.left)/rect.width)*2-1,
+          -((event.clientY-rect.top)/rect.height)*2+1
+        );
+        raycaster.setFromCamera(mouse,camera);
+        const point=new THREE.Vector3();
+        raycaster.ray.intersectPlane(clickPlane,point);
+        const geom=new THREE.BufferGeometry().setFromPoints(Array.from({length:65},(_,i)=>{
+          const a=i/64*Math.PI*2;
+          return new THREE.Vector3(Math.cos(a),0,Math.sin(a));
+        }));
+        const mat=new THREE.LineBasicMaterial({color:0xffff00,transparent:true});
+        const ring=new THREE.LineLoop(geom,mat);
+        ring.rotation.x=-Math.PI/2;
+        ring.position.copy(point);
+        ring.userData.start=performance.now()*0.001;
+        scene.add(ring);
+        explosions.push(ring);
+      }
+
+      function updateExplosions(time){
+        for(let i=explosions.length-1;i>=0;i--){
+          const ring=explosions[i];
+          const t=time-ring.userData.start;
+          ring.scale.setScalar(1+t*5);
+          ring.material.opacity=Math.max(0,1-t*0.5);
+          if(t>2){
+            scene.remove(ring);
+            ring.geometry.dispose();
+            ring.material.dispose();
+            explosions.splice(i,1);
+          }
+        }
+      }
+
     function handleOrientation(e){
       const raw={alpha:e.alpha||0,beta:e.beta||0,gamma:e.gamma||0};
       const r=Math.PI/180;
@@ -195,10 +236,11 @@
     function animate(){
       requestAnimationFrame(animate);
       const time=performance.now()*0.001;
-      updateWaterSurface(time);
-      updateRaisedFloor(time);
-      renderer.render(scene,camera);
-    }
+        updateWaterSurface(time);
+        updateRaisedFloor(time);
+        updateExplosions(time);
+        renderer.render(scene,camera);
+      }
 
     window.addEventListener('load',()=>{
       initScene();

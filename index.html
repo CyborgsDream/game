@@ -96,6 +96,7 @@
       createHorizontalLines();
       createWaterSurface();
       window.addEventListener('resize',onResize);
+      window.addEventListener('orientationchange',onResize);
       renderer.domElement.addEventListener('click',handleClick);
     }
 
@@ -355,7 +356,9 @@
       const alpha=raw.alpha*r;
       const beta=raw.beta*r;
       const gamma=raw.gamma*r;
-      const orient=window.orientation?THREE.MathUtils.degToRad(window.orientation):0;
+      const orient=(screen.orientation&&typeof screen.orientation.angle==='number')
+        ?THREE.MathUtils.degToRad(screen.orientation.angle)
+        : (typeof window.orientation==='number'?THREE.MathUtils.degToRad(window.orientation):0);
       const euler=new THREE.Euler();
       const zee=new THREE.Vector3(0,0,1);
       const q0=new THREE.Quaternion();

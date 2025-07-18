@@ -16,7 +16,7 @@
   <button id="permissionBtn" style="display:none;">Enable Motion</button>
   <button id="calibrateBtn" style="display:none;top:60px;left:20px;position:absolute;padding:10px 20px;font-family:sans-serif;font-size:16px;">Calibrate</button>
   <script>
-    let scene,camera,renderer,wallGrids,verticalLines,raisedFloor;
+    let scene,camera,renderer,wallGrids,verticalLines,horizontalLines,floorGrid,raisedFloor;
     let waterGeom,waterMesh;
     let orientationOffsetQuat=new THREE.Quaternion();
     let lastQuat=new THREE.Quaternion();
@@ -46,7 +46,7 @@
       const floorSize=ROOM_SIZE;
       const floorDiv=30;
       const floorMat=new THREE.LineBasicMaterial({color:0xff8800,opacity:0.4,transparent:true});
-      const floorGrid=new THREE.GridHelper(floorSize,floorDiv,0xff8800,0x884400);
+      floorGrid=new THREE.GridHelper(floorSize,floorDiv,0xff8800,0x884400);
       floorGrid.material=floorMat;
       scene.add(floorGrid);
 
@@ -114,7 +114,7 @@
       const geo=new THREE.BufferGeometry();
       geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
       const mat=new THREE.LineBasicMaterial({color:0xff00ff,opacity:0.4,transparent:true,depthWrite:false});
-      const horizontalLines=new THREE.LineSegments(geo,mat);
+      horizontalLines=new THREE.LineSegments(geo,mat);
       horizontalLines.renderOrder=1;
       scene.add(horizontalLines);
     }
@@ -172,7 +172,16 @@
         );
         raycaster.setFromCamera(mouse,camera);
         const point=new THREE.Vector3();
-        raycaster.ray.intersectPlane(clickPlane,point);
+        const hit=raycaster.ray.intersectPlane(clickPlane,point);
+        if(!hit){
+          const targets=[waterMesh,raisedFloor,verticalLines,horizontalLines,wallGrids];
+          const intersects=raycaster.intersectObjects(targets,true);
+          if(intersects.length>0){
+            point.copy(intersects[0].point);
+          }else{
+            return;
+          }
+        }
         const geom=new THREE.BufferGeometry().setFromPoints(Array.from({length:65},(_,i)=>{
           const a=i/64*Math.PI*2;
           return new THREE.Vector3(Math.cos(a),0,Math.sin(a));
@@ -181,23 +190,140 @@
         const ring=new THREE.LineLoop(geom,mat);
         ring.rotation.x=-Math.PI/2;
         ring.position.copy(point);
-        ring.userData.start=performance.now()*0.001;
+        const start=performance.now()*0.001;
         scene.add(ring);
-        explosions.push(ring);
+        explosions.push({ring,center:point.clone(),start});
       }
 
       function updateExplosions(time){
+        resetDistortion();
         for(let i=explosions.length-1;i>=0;i--){
-          const ring=explosions[i];
-          const t=time-ring.userData.start;
-          ring.scale.setScalar(1+t*5);
-          ring.material.opacity=Math.max(0,1-t*0.5);
+          const exp=explosions[i];
+          const t=time-exp.start;
+          exp.ring.scale.setScalar(1+t*5);
+          exp.ring.material.opacity=Math.max(0,1-t*0.5);
+          applyDistortion(exp.center,t);
           if(t>2){
-            scene.remove(ring);
-            ring.geometry.dispose();
-            ring.material.dispose();
+            scene.remove(exp.ring);
+            exp.ring.geometry.dispose();
+            exp.ring.material.dispose();
             explosions.splice(i,1);
           }
+        }
+      }
+
+      function resetDistortion(){
+        if(waterGeom && waterGeom.userData.base){
+          const pos=waterGeom.attributes.position;
+          const base=waterGeom.userData.base;
+          for(let i=0;i<pos.count;i++){
+            pos.setXYZ(i,base[i*3],base[i*3+1],base[i*3+2]);
+          }
+          pos.needsUpdate=true;
+        }
+        if(verticalLines && verticalLines.geometry.userData.base){
+          const pos=verticalLines.geometry.attributes.position;
+          const base=verticalLines.geometry.userData.base;
+          for(let i=0;i<pos.count;i++){
+            pos.setXYZ(i,base[i*3],base[i*3+1],base[i*3+2]);
+          }
+          pos.needsUpdate=true;
+        }
+        if(horizontalLines && horizontalLines.geometry.userData.base){
+          const pos=horizontalLines.geometry.attributes.position;
+          const base=horizontalLines.geometry.userData.base;
+          for(let i=0;i<pos.count;i++){
+            pos.setXYZ(i,base[i*3],base[i*3+1],base[i*3+2]);
+          }
+          pos.needsUpdate=true;
+        }
+        if(floorGrid && floorGrid.geometry.userData.base){
+          const pos=floorGrid.geometry.attributes.position;
+          const base=floorGrid.geometry.userData.base;
+          for(let i=0;i<pos.count;i++){
+            pos.setXYZ(i,base[i*3],base[i*3+1],base[i*3+2]);
+          }
+          pos.needsUpdate=true;
+        }
+      }
+
+      function applyDistortion(center,t){
+        const radius=t*5;
+        const strength=Math.max(0,1-t*0.5)*0.5;
+        if(waterGeom){
+          const pos=waterGeom.attributes.position;
+          if(!waterGeom.userData.base) waterGeom.userData.base=pos.array.slice();
+          const base=waterGeom.userData.base;
+          for(let i=0;i<pos.count;i++){
+            const bx=base[i*3];
+            const by=base[i*3+1];
+            const bz=base[i*3+2];
+            const dist=Math.hypot(bx-center.x,bz-center.z);
+            let y=by;
+            if(dist<radius){
+              y+= (radius-dist)/radius*strength;
+            }
+            pos.setXYZ(i,bx,y,bz);
+          }
+          pos.needsUpdate=true;
+          waterGeom.computeVertexNormals();
+        }
+        if(verticalLines){
+          const pos=verticalLines.geometry.attributes.position;
+          if(!verticalLines.geometry.userData.base) verticalLines.geometry.userData.base=pos.array.slice();
+          const base=verticalLines.geometry.userData.base;
+          for(let i=0;i<pos.count;i++){
+            const bx=base[i*3];
+            const by=base[i*3+1];
+            const bz=base[i*3+2];
+            const dist=Math.hypot(bx-center.x,bz-center.z);
+            let nx=bx,nz=bz;
+            if(dist<radius && dist>0){
+              const offset=(radius-dist)/radius*strength;
+              nx+= (bx-center.x)/dist*offset;
+              nz+= (bz-center.z)/dist*offset;
+            }
+            pos.setXYZ(i,nx,by,nz);
+          }
+          pos.needsUpdate=true;
+        }
+        if(horizontalLines){
+          const pos=horizontalLines.geometry.attributes.position;
+          if(!horizontalLines.geometry.userData.base) horizontalLines.geometry.userData.base=pos.array.slice();
+          const base=horizontalLines.geometry.userData.base;
+          for(let i=0;i<pos.count;i++){
+            const bx=base[i*3];
+            const by=base[i*3+1];
+            const bz=base[i*3+2];
+            const dist=Math.hypot(bx-center.x,bz-center.z);
+            let nx=bx,nz=bz;
+            if(dist<radius && dist>0){
+              const offset=(radius-dist)/radius*strength;
+              nx+= (bx-center.x)/dist*offset;
+              nz+= (bz-center.z)/dist*offset;
+            }
+            pos.setXYZ(i,nx,by,nz);
+          }
+          pos.needsUpdate=true;
+        }
+        if(floorGrid){
+          const pos=floorGrid.geometry.attributes.position;
+          if(!floorGrid.geometry.userData.base) floorGrid.geometry.userData.base=pos.array.slice();
+          const base=floorGrid.geometry.userData.base;
+          for(let i=0;i<pos.count;i++){
+            const bx=base[i*3];
+            const by=base[i*3+1];
+            const bz=base[i*3+2];
+            const dist=Math.hypot(bx-center.x,bz-center.z);
+            let nx=bx,nz=bz;
+            if(dist<radius && dist>0){
+              const offset=(radius-dist)/radius*strength;
+              nx+= (bx-center.x)/dist*offset;
+              nz+= (bz-center.z)/dist*offset;
+            }
+            pos.setXYZ(i,nx,by,nz);
+          }
+          pos.needsUpdate=true;
         }
       }
 

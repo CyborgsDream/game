@@ -3,16 +3,14 @@ export function hash(x, y) {
 }
 
 export function computeHeight(x, y) {
-  // Generate a rolling heightmap that stays roughly within the range 0-3 so
-  // the terrain never rises too high. Using both sine/cosine waves and some
-  // pseudo-random noise gives a natural looking surface.
-  const noise =
-    0.8 * Math.sin(x * 0.3 + y * 0.17) +
-    0.6 * Math.cos(x * 0.27 - y * 0.19) +
-    (hash(x, y) - 0.5) * 0.8;
-
-  const h = Math.floor(1.5 + noise);
-  return Math.min(3, Math.max(0, h));
+  // Produce gentler hills by reducing the amplitude of the
+  // sine/cosine components and pseudo-random noise.
+  return Math.floor(
+    2.2 +
+    0.5 * Math.sin(x * 0.25 + y * 0.17) +
+    0.4 * Math.cos(x * 0.19 - y * 0.23) +
+    0.3 * hash(x, y)
+  );
 }
 
 let colorMap = {};

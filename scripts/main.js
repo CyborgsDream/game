@@ -1,4 +1,4 @@
-// Game version: 022 - yes1 huge leap
+// Game version: 023 - moving platform cubes
 import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');

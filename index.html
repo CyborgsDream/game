@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAME v022</title>
+  <title>GAME v023</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body,html{margin:0;padding:0;overflow:hidden;background:#000;}
@@ -22,6 +22,9 @@
     let lastQuat=new THREE.Quaternion();
     let offsetInitialized=false;
     let explosions=[];
+    let fallingTiles=[];
+    let lastTime=performance.now()*0.001;
+    const GRAVITY=9.8;
     const raycaster=new THREE.Raycaster();
     const clickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
     const ROOM_SIZE=30;
@@ -66,6 +69,8 @@
           );
           tile.userData.baseColor=0x0000ff;
           tile.userData.alive=true;
+          tile.userData.falling=false;
+          tile.userData.height=platformHeight;
           raisedFloor.add(tile);
         }
       }
@@ -185,8 +190,30 @@
         raisedFloor.position.y=base+amp*t;
         const hue=(time*0.2)%1;
         raisedFloor.children.forEach(tile=>{
+          if(tile.userData.falling) return;
           tile.material.color.setHSL(hue,1,0.5);
         });
+      }
+
+      function updateFallingTiles(delta){
+        for(let i=fallingTiles.length-1;i>=0;i--){
+          const tile=fallingTiles[i];
+          tile.position.addScaledVector(tile.userData.velocity,delta);
+          tile.userData.velocity.y-=GRAVITY*delta;
+          const half=(tile.userData.height||tile.geometry.parameters.height)/2;
+          if(tile.position.y<half){
+            tile.position.y=half;
+            tile.userData.velocity.y*=-0.5;
+            tile.userData.velocity.x*=0.8;
+            tile.userData.velocity.z*=0.8;
+            if(Math.abs(tile.userData.velocity.y)<0.1){
+              tile.userData.velocity.y=0;
+            }
+          }
+          if(tile.position.y<=half && tile.userData.velocity.length()<0.05){
+            fallingTiles.splice(i,1);
+          }
+        }
       }
 
       function handleClick(event){
@@ -236,7 +263,21 @@
             scene.remove(exp.ring);
             exp.ring.geometry.dispose();
             exp.ring.material.dispose();
-            exp.affected.forEach(tile=>{tile.visible=false;tile.userData.alive=false;});
+            exp.affected.forEach(tile=>{
+              const worldPos=tile.getWorldPosition(new THREE.Vector3());
+              raisedFloor.remove(tile);
+              tile.position.copy(worldPos);
+              tile.material.color.set(tile.userData.baseColor);
+              tile.userData.alive=false;
+              tile.userData.falling=true;
+              tile.userData.velocity=new THREE.Vector3(
+                (tile.position.x-exp.center.x),
+                4+Math.random()*2,
+                (tile.position.z-exp.center.z)
+              );
+              scene.add(tile);
+              fallingTiles.push(tile);
+            });
             explosions.splice(i,1);
           }
         }
@@ -339,9 +380,12 @@
     function animate(){
       requestAnimationFrame(animate);
       const time=performance.now()*0.001;
+      const delta=time-lastTime;
+      lastTime=time;
         updateWaterSurface(time);
         updateRaisedFloor(time);
         updateExplosions(time);
+        updateFallingTiles(delta);
         renderer.render(scene,camera);
       }
 

@@ -196,16 +196,20 @@
           -((event.clientY-rect.top)/rect.height)*2+1
         );
         raycaster.setFromCamera(mouse,camera);
-        const point=new THREE.Vector3();
-        const hit=raycaster.ray.intersectPlane(clickPlane,point);
-        if(!hit){
-          const targets=[waterMesh,raisedFloor,verticalLines,horizontalLines,wallGrids];
-          const intersects=raycaster.intersectObjects(targets,true);
-          if(intersects.length>0){
-            point.copy(intersects[0].point);
+        let point=null;
+        let target=null; // 'water' or 'floor'
+        const intersects=raycaster.intersectObjects([waterMesh,raisedFloor],true);
+        if(intersects.length>0){
+          point=intersects[0].point.clone();
+          const obj=intersects[0].object;
+          if(obj===waterMesh){
+            target='water';
           }else{
-            return;
+            target='floor';
           }
+        }else{
+          point=new THREE.Vector3();
+          raycaster.ray.intersectPlane(clickPlane,point);
         }
         const geom=new THREE.BufferGeometry().setFromPoints(Array.from({length:65},(_,i)=>{
           const a=i/64*Math.PI*2;
@@ -217,7 +221,7 @@
         ring.position.copy(point);
         const start=performance.now()*0.001;
         scene.add(ring);
-        explosions.push({ring,center:point.clone(),start,affected:new Set()});
+        explosions.push({ring,center:point.clone(),start,affected:new Set(),target});
       }
 
       function updateExplosions(time){
@@ -255,8 +259,9 @@
 
       function applyDistortion(center,t,exp){
         const radius=t*5;
+        const floorRadius=Math.min(radius,3); // limit floor effect
         const strength=Math.max(0,1-t*0.5)*0.5;
-        if(waterGeom){
+        if((!exp.target || exp.target==='water') && waterGeom){
           const pos=waterGeom.attributes.position;
           const colors=waterGeom.attributes.color;
           if(!waterGeom.userData.base) waterGeom.userData.base=pos.array.slice();
@@ -281,14 +286,17 @@
           colors.needsUpdate=true;
           waterGeom.computeVertexNormals();
         }
-        if(raisedFloor){
+        if((!exp.target || exp.target==='floor') && raisedFloor){
+          const MAX_REMOVALS=5;
           raisedFloor.children.forEach(tile=>{
             if(!tile.userData.alive) return;
             const worldPos=tile.getWorldPosition(new THREE.Vector3());
             const dist=Math.hypot(worldPos.x-center.x,worldPos.z-center.z);
-            if(dist<radius){
+            if(dist<floorRadius){
               tile.material.color.set(0xff0000);
-              if(exp) exp.affected.add(tile);
+              if(exp && (exp.affected.has(tile) || exp.affected.size<MAX_REMOVALS)){
+                exp.affected.add(tile);
+              }
             }else{
               tile.material.color.set(tile.userData.baseColor);
             }

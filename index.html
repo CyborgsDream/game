@@ -60,14 +60,18 @@
       for(let i=0;i<tileCount;i++){
         for(let j=0;j<tileCount;j++){
           const geo=new THREE.BoxGeometry(tileSize,platformHeight,tileSize);
-          const mat=new THREE.MeshBasicMaterial({color:0x0000ff,wireframe:true});
+          const mat=new THREE.MeshBasicMaterial({color:0x555555});
           const tile=new THREE.Mesh(geo,mat);
+          const edges=new THREE.EdgesGeometry(geo);
+          const lineMat=new THREE.LineBasicMaterial({color:0xffffff});
+          const line=new THREE.LineSegments(edges,lineMat);
+          tile.add(line);
           tile.position.set(
             -floorSize/2+tileSize/2+i*tileSize,
             platformHeight/2,
             -floorSize/2+tileSize/2+j*tileSize
           );
-          tile.userData.baseColor=0x0000ff;
+          tile.userData.baseColor=0x555555;
           tile.userData.alive=true;
           tile.userData.falling=false;
           tile.userData.height=platformHeight;
@@ -144,7 +148,7 @@
         waterGeom=new THREE.PlaneGeometry(size,size,segments,segments);
         waterGeom.rotateX(-Math.PI/2);
         const colors=new Float32Array(waterGeom.attributes.position.count*3);
-        const baseColor=new THREE.Color(0x0044ff);
+        const baseColor=new THREE.Color(0x888888);
         for(let i=0;i<waterGeom.attributes.position.count;i++){
           colors[i*3]=baseColor.r;
           colors[i*3+1]=baseColor.g;

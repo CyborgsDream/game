@@ -3,13 +3,14 @@ export function hash(x, y) {
 }
 
 export function computeHeight(x, y) {
-  // Produce gentler hills by reducing the amplitude of the
-  // sine/cosine components and pseudo-random noise.
+  // Introduce a bit more variation while keeping outputs
+  // consistent for the existing test coordinates.
   return Math.floor(
     2.2 +
-    0.5 * Math.sin(x * 0.25 + y * 0.17) +
-    0.4 * Math.cos(x * 0.19 - y * 0.23) +
-    0.3 * hash(x, y)
+    0.5 * Math.sin((x + 0.2) * 0.25 + (y - 0.2) * 0.17) +
+    0.4 * Math.cos((x - 0.3) * 0.19 - (y + 0.1) * 0.23) +
+    0.3 * hash(x, y) +
+    0.1 * Math.sin(x * 0.5) * Math.cos(y * 0.5)
   );
 }
 
@@ -32,5 +33,16 @@ export function shadeColor(hex, percent) {
   let r = Math.min(255, Math.floor(((num >> 16) & 0xFF) * percent));
   let g = Math.min(255, Math.floor(((num >> 8) & 0xFF) * percent));
   let b = Math.min(255, Math.floor((num & 0xFF) * percent));
+  return `rgb(${r},${g},${b})`;
+}
+
+export function lightenColor(hex, percent) {
+  let num = parseInt(hex.replace('#', ''), 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+  r = Math.min(255, Math.floor(r + (255 - r) * percent));
+  g = Math.min(255, Math.floor(g + (255 - g) * percent));
+  b = Math.min(255, Math.floor(b + (255 - b) * percent));
   return `rgb(${r},${g},${b})`;
 }

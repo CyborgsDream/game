@@ -1,5 +1,5 @@
-// Game version: 023 - moving platform cubes
-import { hash, computeHeight, getColor, shadeColor, resetColorMap } from './utils.mjs';
+// Game version: 035 - dynamic sky colors
+import { hash, computeHeight, getColor, shadeColor, lightenColor, resetColorMap } from './utils.mjs';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -212,8 +212,11 @@ function drawSky(ctx) {
   ctx.translate(-canvas.width / 2, -horizon);
   const grad = ctx.createLinearGradient(0, 0, 0, horizon);
   // Give the sky a blue gradient that differs from the terrain colors
-  grad.addColorStop(0, '#003c80');
-  grad.addColorStop(1, '#87ceeb');
+  const t = Math.min(1, Math.max(0, (camera.pitch - minPitch) / (maxPitch - minPitch)));
+  const top = lightenColor('#003c80', 0.5 * t);
+  const bottom = lightenColor('#87ceeb', 0.2 * t);
+  grad.addColorStop(0, top);
+  grad.addColorStop(1, bottom);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, horizon);
   ctx.restore();

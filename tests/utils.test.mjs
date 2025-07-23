@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeHeight, shadeColor, getColor, resetColorMap } from '../scripts/utils.mjs';
+import { computeHeight, shadeColor, lightenColor, getColor, resetColorMap } from '../scripts/utils.mjs';
 
 test('computeHeight deterministic values', () => {
   // With a flatter terrain profile the expected heights are lower
@@ -11,6 +11,10 @@ test('computeHeight deterministic values', () => {
 
 test('shadeColor darkens red at 50%', () => {
   assert.equal(shadeColor('#ff0000', 0.5), 'rgb(127,0,0)');
+});
+
+test('lightenColor lightens blue at 50%', () => {
+  assert.equal(lightenColor('#0000ff', 0.5), 'rgb(127,127,255)');
 });
 
 test('getColor caching and determinism', () => {

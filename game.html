@@ -21,15 +21,8 @@
     let orientationOffsetQuat=new THREE.Quaternion();
     let lastQuat=new THREE.Quaternion();
     let offsetInitialized=false;
-    let explosions=[];
-    let fallingTiles=[];
-    let floatingItems=[];
-    let bombs=[];
-    let nextBombTime=0;
     let lastTime=performance.now()*0.001;
     const GRAVITY=9.8;
-    const raycaster=new THREE.Raycaster();
-    const clickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
     const ROOM_SIZE=30;
     const GRID_SPACING=10;
     function initScene(){
@@ -58,7 +51,9 @@
 
       const platformHeight=GRID_SPACING*0.11;
       const tileCount=10;
-      const tileSize=floorSize/tileCount;
+      const step=floorSize/tileCount;
+      const gap=0.2;
+      const tileSize=step-gap;
       raisedFloor=new THREE.Group();
       for(let i=0;i<tileCount;i++){
         for(let j=0;j<tileCount;j++){
@@ -70,9 +65,9 @@
           const line=new THREE.LineSegments(edges,lineMat);
           tile.add(line);
           tile.position.set(
-            -floorSize/2+tileSize/2+i*tileSize,
+            -floorSize/2+step/2+i*step,
             platformHeight/2,
-            -floorSize/2+tileSize/2+j*tileSize
+            -floorSize/2+step/2+j*step
           );
           tile.userData.baseColor=0x555555;
           tile.userData.alive=true;
@@ -98,10 +93,8 @@
       createVerticalLines();
       createHorizontalLines();
       createWaterSurface();
-      createFloatingItems();
       window.addEventListener('resize',onResize);
       window.addEventListener('orientationchange',onResize);
-      renderer.domElement.addEventListener('click',handleClick);
     }
 
     function createVerticalLines(){
@@ -167,21 +160,6 @@
         scene.add(waterMesh);
       }
 
-      function createFloatingItems(){
-        const count=8;
-        const geo=new THREE.IcosahedronGeometry(0.3,1);
-        for(let i=0;i<count;i++){
-          const mat=new THREE.MeshStandardMaterial({color:0xffee00});
-          const item=new THREE.Mesh(geo,mat);
-          item.position.set(
-            (Math.random()-0.5)*ROOM_SIZE*0.8,
-            0,
-            (Math.random()-0.5)*ROOM_SIZE*0.8
-          );
-          floatingItems.push(item);
-          scene.add(item);
-        }
-      }
 
     function onResize(){
       camera.aspect=window.innerWidth/window.innerHeight;
@@ -213,13 +191,6 @@
         waterGeom.computeVertexNormals();
       }
 
-      function updateFloatingItems(time){
-        floatingItems.forEach((item,i)=>{
-          const h=computeWaterHeight(item.position.x,item.position.z,time);
-          item.position.y=h+0.2+Math.sin(time*2+i)*0.1;
-          item.rotation.y+=0.01;
-        });
-      }
 
       function updateRaisedFloor(time){
         if(!raisedFloor) return;
@@ -234,188 +205,7 @@
         });
       }
 
-      function updateFallingTiles(delta){
-        for(let i=fallingTiles.length-1;i>=0;i--){
-          const tile=fallingTiles[i];
-          tile.position.addScaledVector(tile.userData.velocity,delta);
-          tile.userData.velocity.y-=GRAVITY*delta;
-          const half=(tile.userData.height||tile.geometry.parameters.height)/2;
-          if(tile.position.y<half){
-            tile.position.y=half;
-            tile.userData.velocity.y*=-0.5;
-            tile.userData.velocity.x*=0.8;
-            tile.userData.velocity.z*=0.8;
-            if(Math.abs(tile.userData.velocity.y)<0.1){
-              tile.userData.velocity.y=0;
-            }
-          }
-          if(tile.position.y<=half && tile.userData.velocity.length()<0.05){
-            fallingTiles.splice(i,1);
-          }
-        }
-      }
 
-      function spawnBomb(){
-        const geo=new THREE.SphereGeometry(0.35,16,16);
-        const mat=new THREE.MeshStandardMaterial({color:0x333333});
-        const bomb=new THREE.Mesh(geo,mat);
-        bomb.position.set(
-          (Math.random()-0.5)*ROOM_SIZE*0.9,
-          ROOM_SIZE,
-          (Math.random()-0.5)*ROOM_SIZE*0.9
-        );
-        bomb.userData.velocity=new THREE.Vector3(0,-5-Math.random()*5,0);
-        bombs.push(bomb);
-        scene.add(bomb);
-      }
-
-      function updateBombs(delta,time){
-        if(time>nextBombTime){
-          spawnBomb();
-          nextBombTime=time+2+Math.random()*4;
-        }
-        for(let i=bombs.length-1;i>=0;i--){
-          const b=bombs[i];
-          b.position.addScaledVector(b.userData.velocity,delta);
-          b.userData.velocity.y-=GRAVITY*delta;
-          if(b.position.y<=0){
-            createExplosion(b.position,'water');
-            scene.remove(b);
-            b.geometry.dispose();
-            b.material.dispose();
-            bombs.splice(i,1);
-          }
-        }
-      }
-
-      function handleClick(event){
-        const rect=renderer.domElement.getBoundingClientRect();
-        const mouse=new THREE.Vector2(
-          ((event.clientX-rect.left)/rect.width)*2-1,
-          -((event.clientY-rect.top)/rect.height)*2+1
-        );
-        raycaster.setFromCamera(mouse,camera);
-        let point=null;
-        let target=null; // 'water' or 'floor'
-        const intersects=raycaster.intersectObjects([waterMesh,raisedFloor],true);
-        if(intersects.length>0){
-          point=intersects[0].point.clone();
-          const obj=intersects[0].object;
-          target=(obj===waterMesh)?'water':'floor';
-        }else{
-          point=new THREE.Vector3();
-          raycaster.ray.intersectPlane(clickPlane,point);
-        }
-        createExplosion(point,target);
-      }
-
-      function createExplosion(position,target){
-        const geom=new THREE.BufferGeometry().setFromPoints(Array.from({length:65},(_,i)=>{
-          const a=i/64*Math.PI*2;
-          return new THREE.Vector3(Math.cos(a),0,Math.sin(a));
-        }));
-        const mat=new THREE.LineBasicMaterial({color:0xffff00,transparent:true});
-        const ring=new THREE.LineLoop(geom,mat);
-        ring.rotation.x=-Math.PI/2;
-        ring.position.copy(position);
-        const start=performance.now()*0.001;
-        scene.add(ring);
-        explosions.push({ring,center:position.clone(),start,affected:new Set(),target});
-      }
-
-      function updateExplosions(time){
-        resetDistortion();
-        for(let i=explosions.length-1;i>=0;i--){
-          const exp=explosions[i];
-          const t=time-exp.start;
-          exp.ring.scale.setScalar(1+t*5);
-          exp.ring.material.opacity=Math.max(0,1-t*0.5);
-          applyDistortion(exp.center,t,exp);
-          if(t>2){
-            scene.remove(exp.ring);
-            exp.ring.geometry.dispose();
-            exp.ring.material.dispose();
-            exp.affected.forEach(tile=>{
-              const worldPos=tile.getWorldPosition(new THREE.Vector3());
-              raisedFloor.remove(tile);
-              tile.position.copy(worldPos);
-              tile.material.color.set(tile.userData.baseColor);
-              tile.userData.alive=false;
-              tile.userData.falling=true;
-              tile.userData.velocity=new THREE.Vector3(
-                (tile.position.x-exp.center.x),
-                4+Math.random()*2,
-                (tile.position.z-exp.center.z)
-              );
-              scene.add(tile);
-              fallingTiles.push(tile);
-            });
-            explosions.splice(i,1);
-          }
-        }
-      }
-
-      function resetDistortion(){
-        if(waterGeom && waterGeom.userData.base){
-          const pos=waterGeom.attributes.position;
-          const base=waterGeom.userData.base;
-          const colors=waterGeom.attributes.color;
-          const baseCol=waterMesh.userData.baseColor;
-          for(let i=0;i<pos.count;i++){
-            pos.setXYZ(i,base[i*3],base[i*3+1],base[i*3+2]);
-            colors.setXYZ(i,baseCol[i*3],baseCol[i*3+1],baseCol[i*3+2]);
-          }
-          pos.needsUpdate=true;
-          colors.needsUpdate=true;
-        }
-      }
-
-      function applyDistortion(center,t,exp){
-        const radius=t*5;
-        const floorRadius=Math.min(radius,3); // limit floor effect
-        const strength=Math.max(0,1-t*0.5)*0.5;
-        if((!exp.target || exp.target==='water') && waterGeom){
-          const pos=waterGeom.attributes.position;
-          const colors=waterGeom.attributes.color;
-          if(!waterGeom.userData.base) waterGeom.userData.base=pos.array.slice();
-          if(!waterMesh.userData.baseColor) waterMesh.userData.baseColor=colors.array.slice();
-          const base=waterGeom.userData.base;
-          const baseCol=waterMesh.userData.baseColor;
-          for(let i=0;i<pos.count;i++){
-            const bx=base[i*3];
-            const by=base[i*3+1];
-            const bz=base[i*3+2];
-            const dist=Math.hypot(bx-center.x,bz-center.z);
-            let y=by;
-            if(dist<radius){
-              y+= (radius-dist)/radius*strength;
-              colors.setXYZ(i,1,0,0);
-            }else{
-              colors.setXYZ(i,baseCol[i*3],baseCol[i*3+1],baseCol[i*3+2]);
-            }
-            pos.setXYZ(i,bx,y,bz);
-          }
-          pos.needsUpdate=true;
-          colors.needsUpdate=true;
-          waterGeom.computeVertexNormals();
-        }
-        if((!exp.target || exp.target==='floor') && raisedFloor){
-          const MAX_REMOVALS=5;
-          raisedFloor.children.forEach(tile=>{
-            if(!tile.userData.alive) return;
-            const worldPos=tile.getWorldPosition(new THREE.Vector3());
-            const dist=Math.hypot(worldPos.x-center.x,worldPos.z-center.z);
-            if(dist<floorRadius){
-              tile.material.color.set(0xff0000);
-              if(exp && (exp.affected.has(tile) || exp.affected.size<MAX_REMOVALS)){
-                exp.affected.add(tile);
-              }
-            }else{
-              tile.material.color.set(tile.userData.baseColor);
-            }
-          });
-        }
-      }
 
     function handleOrientation(e){
       const raw={alpha:e.alpha||0,beta:e.beta||0,gamma:e.gamma||0};
@@ -458,10 +248,6 @@
       lastTime=time;
         updateWaterSurface(time);
         updateRaisedFloor(time);
-        updateFloatingItems(time);
-        updateBombs(delta,time);
-        updateExplosions(time);
-        updateFallingTiles(delta);
         renderer.render(scene,camera);
       }
 

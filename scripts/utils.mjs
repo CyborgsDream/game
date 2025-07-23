@@ -3,14 +3,20 @@ export function hash(x, y) {
 }
 
 export function computeHeight(x, y) {
-  // Produce gentler hills by reducing the amplitude of the
-  // sine/cosine components and pseudo-random noise.
-  return Math.floor(
-    2.2 +
-    0.5 * Math.sin(x * 0.25 + y * 0.17) +
-    0.4 * Math.cos(x * 0.19 - y * 0.23) +
-    0.3 * hash(x, y)
-  );
+  const tileX = Math.floor(x);
+  const tileY = Math.floor(y);
+  const fx = x - tileX;
+  const fy = y - tileY;
+  function corner(tx, ty) {
+    return Math.round(hash(tx * 0.13, ty * 0.27) * 20 - 10);
+  }
+  const h00 = corner(tileX, tileY);
+  const h10 = corner(tileX + 1, tileY);
+  const h01 = corner(tileX, tileY + 1);
+  const h11 = corner(tileX + 1, tileY + 1);
+  const h0 = h00 * (1 - fx) + h10 * fx;
+  const h1 = h01 * (1 - fx) + h11 * fx;
+  return h0 * (1 - fy) + h1 * fy;
 }
 
 let colorMap = {};
@@ -21,10 +27,17 @@ export function resetColorMap() {
 export function getColor(x, y) {
   const key = x + ',' + y;
   if (colorMap[key]) return colorMap[key];
-  const palette = ["#aad", "#6b8", "#386", "#2c4", "#c94", "#7b5", "#a83"];
-  const idx = Math.floor(hash(x + 1.5, y - 2.7) * palette.length);
-  colorMap[key] = palette[idx];
-  return colorMap[key];
+  const typeVal = hash(x + 1.5, y - 2.7);
+  let color;
+  if (typeVal < 0.1) {
+    color = '#42aaff'; // water
+  } else if (typeVal < 0.2) {
+    color = '#c94';    // path
+  } else {
+    color = '#2c4';    // grass
+  }
+  colorMap[key] = color;
+  return color;
 }
 
 export function shadeColor(hex, percent) {

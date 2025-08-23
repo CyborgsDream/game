@@ -25,14 +25,15 @@ debugEl.style.display = 'block';
 const tileSize = 32;
 const tilesInView = 96; // increase draw distance to avoid tiles popping
 // Perspective parameters
-let fieldOfView = Math.PI / 2.4; // ~75° vertical FOV
+// Increase default FOV for a stronger fish-eye effect
+let fieldOfView = Math.PI / 1.8; // ~100° vertical FOV
 let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
 // Derived horizontal FOV for culling
 let horizontalFOV = 2 * Math.atan(Math.tan(fieldOfView / 2) * canvas.width / canvas.height);
 let cosHalfHFOV = Math.cos(horizontalFOV / 2);
 // Scale factor to exaggerate depth and make far tiles smaller
-// Higher values create a stronger sense of perspective
-const perspectiveScale = 30;
+// Higher values create a stronger fish-eye perspective
+const perspectiveScale = 50;
 
 // --- Terrain Height Functions ---
 // Implemented in utils.mjs
@@ -428,7 +429,8 @@ if (window.DeviceOrientationEvent) {
         baseAlpha = e.alpha;
       }
       const diff = ((e.alpha - baseAlpha + 540) % 360) - 180;
-      const yawRad = diff * Math.PI / 180 * orientationFactor;
+      // Invert yaw to match expected horizontal motion
+      const yawRad = -diff * Math.PI / 180 * orientationFactor;
       camera.yaw = wrapAngle(yawFilter.filter(yawRad, dt));
       camera.flyYaw = camera.yaw;
     }

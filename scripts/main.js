@@ -64,6 +64,18 @@ let sinRoll = Math.sin(camera.roll), cosRoll = Math.cos(camera.roll);
 // Device orientation tuning
 const orientationFactor = 0.7;   // reduce sensitivity
 
+// Helper to determine current screen orientation angle
+function getOrientationAngle() {
+  if (screen.orientation && typeof screen.orientation.angle === 'number') {
+    return screen.orientation.angle;
+  }
+  // Older browsers
+  if (typeof window.orientation === 'number') {
+    return window.orientation;
+  }
+  return 0;
+}
+
 // One Euro filters for stabilizing orientation
 const yawFilter = new OneEuroFilter(1.0, 0.01);
 const pitchFilter = new OneEuroFilter(1.0, 0.01);
@@ -332,15 +344,33 @@ if (window.DeviceOrientationEvent) {
       camera.yaw = wrapAngle(yawFilter.filter(yawRad, dt));
       camera.flyYaw = camera.yaw;
     }
-    if (e.beta !== null) {
-      // On most devices beta is 0° when the phone is vertical and 90° when
-      // it is laid flat. Use beta directly so a vertical phone looks straight
-      // ahead and tilting it down increases the pitch angle.
-      const pitchRad = e.beta * Math.PI / 180 * orientationFactor;
+    // Determine pitch and roll depending on screen orientation
+    let beta = e.beta;
+    let gamma = e.gamma;
+    const angle = getOrientationAngle();
+    // Adjust axes when in landscape orientation
+    switch (angle) {
+      case 90:
+      case -270:
+        [beta, gamma] = [-gamma, beta];
+        break;
+      case -90:
+      case 270:
+        [beta, gamma] = [gamma, -beta];
+        break;
+      case 180:
+      case -180:
+        beta = -beta;
+        gamma = -gamma;
+        break;
+      // 0 or other angles: use beta/gamma directly
+    }
+    if (beta !== null) {
+      const pitchRad = beta * Math.PI / 180 * orientationFactor;
       camera.pitch = Math.min(maxPitch, Math.max(minPitch, pitchFilter.filter(pitchRad, dt)));
     }
-    if (e.gamma !== null) {
-      const rollRad = e.gamma * Math.PI / 180 * orientationFactor;
+    if (gamma !== null) {
+      const rollRad = gamma * Math.PI / 180 * orientationFactor;
       camera.roll = rollFilter.filter(rollRad, dt);
     }
     updateOrientation();

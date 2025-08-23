@@ -21,10 +21,13 @@
     let orientationOffsetQuat=new THREE.Quaternion();
     let lastQuat=new THREE.Quaternion();
     let offsetInitialized=false;
+    let isCalibrated=false;
     let targetAngles={alpha:0,beta:0,gamma:0};
     let currentAngles={alpha:0,beta:0,gamma:0};
-    const strongTime=1.0; // seconds to reach ~63% of target on main axis
-    const weakTime=0.3;   // quicker response on other axes
+    const strongTimeDefault=1.0; // seconds to reach ~63% of target on main axis
+    const weakTimeDefault=0.3;   // quicker response on other axes
+    const strongTimeCalibrated=2.0; // stronger stabilization after calibration
+    const weakTimeCalibrated=0.6;
     let explosions=[];
     let fallingTiles=[];
     let floatingItems=[];
@@ -63,26 +66,31 @@
       const platformHeight=GRID_SPACING*0.22;
       const tileCount=10;
       const tileSize=floorSize/tileCount;
+      const layers=3;
+      const layerSpacing=platformHeight+0.5;
       raisedFloor=new THREE.Group();
-      for(let i=0;i<tileCount;i++){
-        for(let j=0;j<tileCount;j++){
-          const geo=new THREE.BoxGeometry(tileSize,platformHeight,tileSize);
-          const mat=new THREE.MeshBasicMaterial({color:0x555555});
-          const tile=new THREE.Mesh(geo,mat);
-          const edges=new THREE.EdgesGeometry(geo);
-          const lineMat=new THREE.LineBasicMaterial({color:0xffffff});
-          const line=new THREE.LineSegments(edges,lineMat);
-          tile.add(line);
-          tile.position.set(
-            -floorSize/2+tileSize/2+i*tileSize,
-            platformHeight/2,
-            -floorSize/2+tileSize/2+j*tileSize
-          );
-          tile.userData.baseColor=0x555555;
-          tile.userData.alive=true;
-          tile.userData.falling=false;
-          tile.userData.height=platformHeight;
-          raisedFloor.add(tile);
+      for(let l=0;l<layers;l++){
+        for(let i=0;i<tileCount;i++){
+          for(let j=0;j<tileCount;j++){
+            const geo=new THREE.BoxGeometry(tileSize,platformHeight,tileSize);
+            const mat=new THREE.MeshBasicMaterial({color:0x555555});
+            const tile=new THREE.Mesh(geo,mat);
+            const edges=new THREE.EdgesGeometry(geo);
+            const lineMat=new THREE.LineBasicMaterial({color:0xffffff});
+            const line=new THREE.LineSegments(edges,lineMat);
+            tile.add(line);
+            tile.position.set(
+              -floorSize/2+tileSize/2+i*tileSize,
+              platformHeight/2+l*layerSpacing,
+              -floorSize/2+tileSize/2+j*tileSize
+            );
+            tile.userData.baseColor=0x555555;
+            tile.userData.alive=true;
+            tile.userData.falling=false;
+            tile.userData.height=platformHeight;
+            tile.userData.size=tileSize;
+            raisedFloor.add(tile);
+          }
         }
       }
       raisedFloor.position.y=GRID_SPACING*0.33;
@@ -196,6 +204,7 @@
     function calibrateOrientation(){
       orientationOffsetQuat.copy(lastQuat);
       offsetInitialized=true;
+      isCalibrated=true;
     }
 
     function computeWaterHeight(x,z,time){
@@ -244,14 +253,24 @@
           tile.position.addScaledVector(tile.userData.velocity,delta);
           tile.userData.velocity.y-=GRAVITY*delta;
           const half=(tile.userData.height||tile.geometry.parameters.height)/2;
+          const sizeHalf=(tile.userData.size||1)/2;
           if(tile.position.y<half){
             tile.position.y=half;
-            tile.userData.velocity.y*=-0.5;
-            tile.userData.velocity.x*=0.8;
-            tile.userData.velocity.z*=0.8;
+            tile.userData.velocity.y*=-0.7;
+            tile.userData.velocity.x*=0.9;
+            tile.userData.velocity.z*=0.9;
             if(Math.abs(tile.userData.velocity.y)<0.1){
               tile.userData.velocity.y=0;
             }
+          }
+          const limit=ROOM_SIZE/2-sizeHalf;
+          if(tile.position.x<-limit || tile.position.x>limit){
+            tile.position.x=THREE.MathUtils.clamp(tile.position.x,-limit,limit);
+            tile.userData.velocity.x*=-0.7;
+          }
+          if(tile.position.z<-limit || tile.position.z>limit){
+            tile.position.z=THREE.MathUtils.clamp(tile.position.z,-limit,limit);
+            tile.userData.velocity.z*=-0.7;
           }
           if(tile.position.y<=half && tile.userData.velocity.length()<0.05){
             fallingTiles.splice(i,1);
@@ -465,8 +484,10 @@
         ?screen.orientation.angle
         : (typeof window.orientation==='number'?window.orientation:0);
       const strongAxis=(orientDeg===0||orientDeg===180)?'beta':'alpha';
-      const factorStrong=1-Math.exp(-delta/strongTime);
-      const factorWeak=1-Math.exp(-delta/weakTime);
+      const st=isCalibrated?strongTimeCalibrated:strongTimeDefault;
+      const wt=isCalibrated?weakTimeCalibrated:weakTimeDefault;
+      const factorStrong=1-Math.exp(-delta/st);
+      const factorWeak=1-Math.exp(-delta/wt);
       ['alpha','beta','gamma'].forEach(ax=>{
         const f=ax===strongAxis?factorStrong:factorWeak;
         currentAngles[ax]+= (targetAngles[ax]-currentAngles[ax])*f;

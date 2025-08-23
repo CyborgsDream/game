@@ -1,6 +1,6 @@
 # HTML5 Game
 
-**Version:** v035 blocks
+**Version:** v0.22
 A modern HTML5 3D terrain engine starter.
 
 ## Files

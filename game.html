@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAME v035blocks</title>
+  <title>GAME v0.22</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body,html{margin:0;padding:0;overflow:hidden;background:#000;}
@@ -21,6 +21,10 @@
     let orientationOffsetQuat=new THREE.Quaternion();
     let lastQuat=new THREE.Quaternion();
     let offsetInitialized=false;
+    let targetAngles={alpha:0,beta:0,gamma:0};
+    let currentAngles={alpha:0,beta:0,gamma:0};
+    const strongTime=1.0; // seconds to reach ~63% of target on main axis
+    const weakTime=0.3;   // quicker response on other axes
     let explosions=[];
     let fallingTiles=[];
     let floatingItems=[];
@@ -56,7 +60,7 @@
       floorGrid.material=floorMat;
       scene.add(floorGrid);
 
-      const platformHeight=GRID_SPACING*0.11;
+      const platformHeight=GRID_SPACING*0.22;
       const tileCount=10;
       const tileSize=floorSize/tileCount;
       raisedFloor=new THREE.Group();
@@ -418,11 +422,13 @@
       }
 
     function handleOrientation(e){
-      const raw={alpha:e.alpha||0,beta:e.beta||0,gamma:e.gamma||0};
+      // store target angles in degrees for smoothing later
+      targetAngles.alpha=e.alpha||0;
+      targetAngles.beta=e.beta||0;
+      targetAngles.gamma=e.gamma||0;
+
+      // compute quaternion from raw data for calibration
       const r=Math.PI/180;
-      const alpha=raw.alpha*r;
-      const beta=raw.beta*r;
-      const gamma=raw.gamma*r;
       const orient=(screen.orientation&&typeof screen.orientation.angle==='number')
         ?THREE.MathUtils.degToRad(screen.orientation.angle)
         : (typeof window.orientation==='number'?THREE.MathUtils.degToRad(window.orientation):0);
@@ -430,14 +436,12 @@
       const zee=new THREE.Vector3(0,0,1);
       const q0=new THREE.Quaternion();
       const q1=new THREE.Quaternion(-Math.sqrt(0.5),0,0,Math.sqrt(0.5));
-      euler.set(beta,alpha,-gamma,'YXZ');
+      euler.set(targetAngles.beta*r,targetAngles.alpha*r,-targetAngles.gamma*r,'YXZ');
       const quaternion=new THREE.Quaternion().setFromEuler(euler);
       quaternion.multiply(q1);
       quaternion.multiply(q0.setFromAxisAngle(zee,-orient));
       lastQuat.copy(quaternion);
       if(!offsetInitialized){orientationOffsetQuat.copy(quaternion);offsetInitialized=true;}
-      const calibrated=quaternion.clone().premultiply(orientationOffsetQuat.clone().invert());
-      camera.quaternion.slerp(calibrated,0.2);
     }
 
     function startOrientation(){
@@ -456,14 +460,39 @@
       const time=performance.now()*0.001;
       const delta=time-lastTime;
       lastTime=time;
-        updateWaterSurface(time);
-        updateRaisedFloor(time);
-        updateFloatingItems(time);
-        updateBombs(delta,time);
-        updateExplosions(time);
-        updateFallingTiles(delta);
-        renderer.render(scene,camera);
-      }
+      // determine which axis to heavily stabilize based on screen orientation
+      const orientDeg=(screen.orientation&&typeof screen.orientation.angle==='number')
+        ?screen.orientation.angle
+        : (typeof window.orientation==='number'?window.orientation:0);
+      const strongAxis=(orientDeg===0||orientDeg===180)?'beta':'alpha';
+      const factorStrong=1-Math.exp(-delta/strongTime);
+      const factorWeak=1-Math.exp(-delta/weakTime);
+      ['alpha','beta','gamma'].forEach(ax=>{
+        const f=ax===strongAxis?factorStrong:factorWeak;
+        currentAngles[ax]+= (targetAngles[ax]-currentAngles[ax])*f;
+      });
+
+      const r=Math.PI/180;
+      const orientRad=THREE.MathUtils.degToRad(orientDeg);
+      const euler=new THREE.Euler();
+      const zee=new THREE.Vector3(0,0,1);
+      const q0=new THREE.Quaternion();
+      const q1=new THREE.Quaternion(-Math.sqrt(0.5),0,0,Math.sqrt(0.5));
+      euler.set(currentAngles.beta*r,currentAngles.alpha*r,-currentAngles.gamma*r,'YXZ');
+      const quaternion=new THREE.Quaternion().setFromEuler(euler);
+      quaternion.multiply(q1);
+      quaternion.multiply(q0.setFromAxisAngle(zee,-orientRad));
+      const calibrated=quaternion.clone().premultiply(orientationOffsetQuat.clone().invert());
+      camera.quaternion.copy(calibrated);
+
+      updateWaterSurface(time);
+      updateRaisedFloor(time);
+      updateFloatingItems(time);
+      updateBombs(delta,time);
+      updateExplosions(time);
+      updateFallingTiles(delta);
+      renderer.render(scene,camera);
+    }
 
     window.addEventListener('load',()=>{
       initScene();

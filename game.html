@@ -9,12 +9,18 @@
     body,html{margin:0;padding:0;overflow:hidden;background:#000;}
     #sceneCanvas{display:block;width:100vw;height:100vh;}
     #permissionBtn{position:absolute;top:20px;left:20px;padding:10px 20px;font-family:sans-serif;font-size:16px;}
+    #hud{position:absolute;top:10px;right:10px;color:#fff;font-family:sans-serif;font-size:14px;text-align:right;line-height:1.4;}
   </style>
 </head>
 <body>
   <canvas id="sceneCanvas"></canvas>
   <button id="permissionBtn" style="display:none;">Enable Motion</button>
   <button id="calibrateBtn" style="display:none;top:60px;left:20px;position:absolute;padding:10px 20px;font-family:sans-serif;font-size:16px;">Calibrate</button>
+  <div id="hud">
+    <div id="orientDisplay"></div>
+    <div id="fpsDisplay"></div>
+    <div id="stepsDisplay"></div>
+  </div>
   <script>
     let scene,camera,renderer,wallGrids,verticalLines,horizontalLines,floorGrid,raisedFloor;
     let waterGeom,waterMesh;
@@ -34,6 +40,11 @@
     let bombs=[];
     let nextBombTime=0;
     let lastTime=performance.now()*0.001;
+    const orientDisplay=document.getElementById('orientDisplay');
+    const fpsDisplay=document.getElementById('fpsDisplay');
+    const stepsDisplay=document.getElementById('stepsDisplay');
+    let stepCount=0;
+    let lastStepTime=0;
     const GRAVITY=9.8;
     const raycaster=new THREE.Raycaster();
     const clickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
@@ -463,14 +474,42 @@
       if(!offsetInitialized){orientationOffsetQuat.copy(quaternion);offsetInitialized=true;}
     }
 
+    function handleMotion(e){
+      const acc=e.accelerationIncludingGravity;
+      if(!acc) return;
+      const accMag=Math.sqrt(acc.x*acc.x+acc.y*acc.y+acc.z*acc.z);
+      const deltaAcc=accMag-GRAVITY;
+      const now=performance.now();
+      if(deltaAcc>1.2&&now-lastStepTime>300){
+        stepCount++;
+        lastStepTime=now;
+      }
+    }
+
     function startOrientation(){
       window.addEventListener('deviceorientation',handleOrientation);
+      window.addEventListener('devicemotion',handleMotion);
       document.getElementById('calibrateBtn').style.display='block';
     }
 
     function requestPermission(){
+      const promises=[];
       if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
-        DeviceOrientationEvent.requestPermission().then(state=>{if(state==='granted'){startOrientation();document.getElementById('permissionBtn').style.display='none';}}).catch(console.error);
+        promises.push(DeviceOrientationEvent.requestPermission());
+      }
+      if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+        promises.push(DeviceMotionEvent.requestPermission());
+      }
+      if(promises.length>0){
+        Promise.all(promises).then(res=>{
+          if(res.every(r=>r==='granted')){
+            startOrientation();
+            document.getElementById('permissionBtn').style.display='none';
+          }
+        }).catch(console.error);
+      }else{
+        startOrientation();
+        document.getElementById('permissionBtn').style.display='none';
       }
     }
 
@@ -492,6 +531,10 @@
         const f=ax===strongAxis?factorStrong:factorWeak;
         currentAngles[ax]+= (targetAngles[ax]-currentAngles[ax])*f;
       });
+
+      orientDisplay.textContent=`α:${currentAngles.alpha.toFixed(1)} β:${currentAngles.beta.toFixed(1)} γ:${currentAngles.gamma.toFixed(1)}`;
+      fpsDisplay.textContent=`FPS: ${(1/delta).toFixed(1)}`;
+      stepsDisplay.textContent=`Steps: ${stepCount}`;
 
       const r=Math.PI/180;
       const orientRad=THREE.MathUtils.degToRad(orientDeg);
@@ -521,7 +564,9 @@
       const btn=document.getElementById('permissionBtn');
       const calib=document.getElementById('calibrateBtn');
       calib.addEventListener('click',calibrateOrientation);
-      if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+      const needsPerm=(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function')||
+                      (typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function');
+      if(needsPerm){
         btn.style.display='block';
         btn.addEventListener('click',requestPermission);
       }else{

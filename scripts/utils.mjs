@@ -14,18 +14,24 @@ export function computeHeight(x, y) {
   );
 }
 
-let colorMap = {};
+const colorMap = new Map();
+const COLOR_CACHE_LIMIT = 10000;
 export function resetColorMap() {
-  colorMap = {};
+  colorMap.clear();
 }
 
 export function getColor(x, y) {
-  const key = x + ',' + y;
-  if (colorMap[key]) return colorMap[key];
+  const key = `${x},${y}`;
+  if (colorMap.has(key)) return colorMap.get(key);
   const palette = ["#aad", "#6b8", "#386", "#2c4", "#c94", "#7b5", "#a83"];
   const idx = Math.floor(hash(x + 1.5, y - 2.7) * palette.length);
-  colorMap[key] = palette[idx];
-  return colorMap[key];
+  if (colorMap.size >= COLOR_CACHE_LIMIT) {
+    const firstKey = colorMap.keys().next().value;
+    colorMap.delete(firstKey);
+  }
+  const value = palette[idx];
+  colorMap.set(key, value);
+  return value;
 }
 
 export function shadeColor(hex, percent) {

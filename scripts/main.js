@@ -10,6 +10,9 @@ function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
+  yawFilter.reset();
+  pitchFilter.reset();
+  rollFilter.reset();
   updateOrientation();
 }
 
@@ -63,6 +66,22 @@ let sinRoll = Math.sin(camera.roll), cosRoll = Math.cos(camera.roll);
 
 // Device orientation tuning
 const orientationFactor = 0.7;   // reduce sensitivity
+
+// Projectile and explosion containers
+let projectiles = [];
+let explosions = [];
+
+function fireMissile() {
+  const speed = 0.5;
+  projectiles.push({
+    x: camera.x,
+    y: camera.y,
+    z: camera.altitude,
+    vx: Math.cos(camera.yaw) * speed,
+    vy: Math.sin(camera.yaw) * speed,
+    vz: -0.2
+  });
+}
 
 // Helper to determine current screen orientation angle
 function getOrientationAngle() {
@@ -297,6 +316,70 @@ function drawSlopedTerrain(ctx) {
 }
 
 
+function updateProjectiles() {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.z += p.vz;
+    p.vz -= 0.01;
+    const ground = getHeight(p.x, p.y);
+    if (p.z <= ground) {
+      explosions.push({ x: p.x, y: p.y, start: performance.now() });
+      projectiles.splice(i, 1);
+    }
+  }
+}
+
+function updateExplosions() {
+  const now = performance.now();
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    if (now - explosions[i].start > 1000) {
+      explosions.splice(i, 1);
+    }
+  }
+}
+
+function drawEffects(ctx) {
+  ctx.save();
+  ctx.translate(canvas.width / 2, getVerticalOffset());
+  ctx.rotate(camera.roll);
+
+  ctx.fillStyle = 'yellow';
+  for (const p of projectiles) {
+    const proj = project3D(p.x, p.y, p.z);
+    if (!proj) continue;
+    ctx.beginPath();
+    ctx.arc(proj[0], proj[1], 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const now = performance.now();
+  ctx.strokeStyle = 'orange';
+  for (const e of explosions) {
+    const ground = getHeight(e.x, e.y);
+    const center = project3D(e.x, e.y, ground);
+    if (!center) continue;
+    const [cx, cy, denom] = center;
+    const age = (now - e.start) / 1000;
+    const radius = age * 2;
+    const amp = radius * 0.3;
+    const scale = (tileSize * focal) / denom;
+    ctx.beginPath();
+    for (let a = 0; a <= Math.PI * 2; a += Math.PI / 16) {
+      const r = (radius + Math.sin(a * 6) * amp) * scale;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+
 // --- Keyboard Controls ---
 let keyState = {};
 document.addEventListener('keydown', e => {
@@ -306,6 +389,10 @@ document.addEventListener('keydown', e => {
     debugEl.style.display = showDebug ? 'block' : 'none';
   }
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Equal', 'Minus'].includes(e.code)) {
+    e.preventDefault();
+  }
+  if (e.code === 'Space') {
+    fireMissile();
     e.preventDefault();
   }
 });
@@ -331,7 +418,8 @@ if (window.DeviceOrientationEvent) {
 
   window.addEventListener('deviceorientation', (e) => {
     const now = performance.now();
-    const dt = lastOrientationTs ? (now - lastOrientationTs) / 1000 : 1 / 60;
+    const dtRaw = lastOrientationTs ? (now - lastOrientationTs) / 1000 : 1 / 60;
+    const dt = Math.max(1 / 120, dtRaw);
     lastOrientationTs = now;
 
     if (e.alpha !== null) {
@@ -401,9 +489,12 @@ function handleCameraInput() {
 function loop() {
   handleCameraInput();
   updateCamera();
+  updateProjectiles();
+  updateExplosions();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawSky(ctx);
   drawSlopedTerrain(ctx);
+  drawEffects(ctx);
   updateDebugInfo();
   requestAnimationFrame(loop);
 }

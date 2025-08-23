@@ -1,5 +1,6 @@
 // Game version: 035 - dynamic sky colors
 import { hash, computeHeight, getColor, shadeColor, lightenColor, resetColorMap } from './utils.mjs';
+import { OneEuroFilter } from './filters.mjs';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -62,10 +63,13 @@ let sinRoll = Math.sin(camera.roll), cosRoll = Math.cos(camera.roll);
 
 // Device orientation tuning
 const orientationFactor = 0.7;   // reduce sensitivity
-const smoothingFactor = 0.2;      // simple low-pass filter
-let smoothedYaw = camera.yaw;
-let smoothedPitch = camera.pitch;
-let smoothedRoll = camera.roll;
+
+// One Euro filters for stabilizing orientation
+const yawFilter = new OneEuroFilter(1.0, 0.01);
+const pitchFilter = new OneEuroFilter(1.0, 0.01);
+const rollFilter = new OneEuroFilter(1.0, 0.01);
+let lastOrientationTs = null;
+
 function updateOrientation() {
   sinYaw = Math.sin(camera.yaw);
   cosYaw = Math.cos(camera.yaw);
@@ -307,6 +311,10 @@ if (window.DeviceOrientationEvent) {
   }
 
   window.addEventListener('deviceorientation', (e) => {
+    const now = performance.now();
+    const dt = lastOrientationTs ? (now - lastOrientationTs) / 1000 : 1 / 60;
+    lastOrientationTs = now;
+
     if (e.alpha !== null) {
       lastAlpha = e.alpha;
       if (baseAlpha === null) {
@@ -314,22 +322,19 @@ if (window.DeviceOrientationEvent) {
       }
       const diff = ((e.alpha - baseAlpha + 540) % 360) - 180;
       const yawRad = diff * Math.PI / 180 * orientationFactor;
-      smoothedYaw = smoothedYaw * (1 - smoothingFactor) + yawRad * smoothingFactor;
-      camera.yaw = smoothedYaw;
-      camera.flyYaw = smoothedYaw;
+      camera.yaw = yawFilter.filter(yawRad, dt);
+      camera.flyYaw = camera.yaw;
     }
     if (e.beta !== null) {
       // On most devices beta is 0° when the phone is vertical and 90° when
       // it is laid flat. Use beta directly so a vertical phone looks straight
       // ahead and tilting it down increases the pitch angle.
       const pitchRad = e.beta * Math.PI / 180 * orientationFactor;
-      smoothedPitch = smoothedPitch * (1 - smoothingFactor) + pitchRad * smoothingFactor;
-      camera.pitch = Math.min(maxPitch, Math.max(minPitch, smoothedPitch));
+      camera.pitch = Math.min(maxPitch, Math.max(minPitch, pitchFilter.filter(pitchRad, dt)));
     }
     if (e.gamma !== null) {
       const rollRad = e.gamma * Math.PI / 180 * orientationFactor;
-      smoothedRoll = smoothedRoll * (1 - smoothingFactor) + rollRad * smoothingFactor;
-      camera.roll = smoothedRoll;
+      camera.roll = rollFilter.filter(rollRad, dt);
     }
     updateOrientation();
   });

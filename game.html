@@ -16,10 +16,12 @@
   <canvas id="sceneCanvas"></canvas>
   <button id="permissionBtn" style="display:none;">Enable Motion</button>
   <button id="calibrateBtn" style="display:none;top:60px;left:20px;position:absolute;padding:10px 20px;font-family:sans-serif;font-size:16px;">Calibrate</button>
+  <button id="fireBtn" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;font-family:sans-serif;font-size:16px;">Fire Missile</button>
   <div id="hud">
     <div id="orientDisplay"></div>
     <div id="fpsDisplay"></div>
     <div id="stepsDisplay"></div>
+    <div id="energyDisplay"></div>
   </div>
   <script>
     let scene,camera,renderer,wallGrids,verticalLines,horizontalLines,floorGrid,raisedFloor;
@@ -43,8 +45,12 @@
     const orientDisplay=document.getElementById('orientDisplay');
     const fpsDisplay=document.getElementById('fpsDisplay');
     const stepsDisplay=document.getElementById('stepsDisplay');
+    const energyDisplay=document.getElementById('energyDisplay');
+    const fireBtn=document.getElementById('fireBtn');
+    fireBtn.addEventListener('click',fireMissile);
     let stepCount=0;
     let lastStepTime=0;
+    let energy=3;
     const GRAVITY=9.8;
     const raycaster=new THREE.Raycaster();
     const clickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
@@ -125,6 +131,25 @@
       window.addEventListener('resize',onResize);
       window.addEventListener('orientationchange',onResize);
       renderer.domElement.addEventListener('click',handleClick);
+    }
+
+    function fireMissile(){
+      if(energy<=0) return;
+      energy--;
+      const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+      raycaster.set(camera.position,dir);
+      let point=null;
+      let target=null;
+      const intersects=raycaster.intersectObjects([waterMesh,raisedFloor],true);
+      if(intersects.length>0){
+        point=intersects[0].point.clone();
+        const obj=intersects[0].object;
+        target=(obj===waterMesh)?'water':'floor';
+      }else{
+        point=new THREE.Vector3();
+        raycaster.ray.intersectPlane(clickPlane,point);
+      }
+      createExplosion(point,target);
     }
 
     function createVerticalLines(){
@@ -482,6 +507,7 @@
       const now=performance.now();
       if(deltaAcc>1.2&&now-lastStepTime>300){
         stepCount++;
+        energy++;
         lastStepTime=now;
       }
     }
@@ -535,6 +561,7 @@
       orientDisplay.textContent=`α:${currentAngles.alpha.toFixed(1)} β:${currentAngles.beta.toFixed(1)} γ:${currentAngles.gamma.toFixed(1)}`;
       fpsDisplay.textContent=`FPS: ${(1/delta).toFixed(1)}`;
       stepsDisplay.textContent=`Steps: ${stepCount}`;
+      energyDisplay.textContent=`Energy: ${energy}`;
 
       const r=Math.PI/180;
       const orientRad=THREE.MathUtils.degToRad(orientDeg);

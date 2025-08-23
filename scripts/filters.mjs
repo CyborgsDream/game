@@ -25,4 +25,9 @@ export class OneEuroFilter {
     this.x = this.x + alpha * (value - this.x);
     return this.x;
   }
+
+  reset() {
+    this.x = null;
+    this.dx = 0;
+  }
 }

@@ -10,18 +10,23 @@
     #sceneCanvas{display:block;width:100vw;height:100vh;}
     #permissionBtn{position:absolute;top:20px;left:20px;padding:10px 20px;font-family:sans-serif;font-size:16px;}
     #hud{position:absolute;top:10px;right:10px;color:#fff;font-family:sans-serif;font-size:14px;text-align:right;line-height:1.4;}
+    #targetLock{position:absolute;width:20px;height:20px;border:2px solid red;border-radius:50%;pointer-events:none;display:none;}
+    #energyBarContainer{width:100px;height:10px;border:1px solid #fff;margin-top:5px;}
+    #energyBar{height:100%;width:0;background:orange;}
   </style>
 </head>
 <body>
   <canvas id="sceneCanvas"></canvas>
   <button id="permissionBtn" style="display:none;">Enable Motion</button>
   <button id="calibrateBtn" style="display:none;top:60px;left:20px;position:absolute;padding:10px 20px;font-family:sans-serif;font-size:16px;">Calibrate</button>
-  <button id="fireBtn" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;font-family:sans-serif;font-size:16px;">Fire Missile</button>
+  <button id="chargeBtn" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;font-family:sans-serif;font-size:16px;">Charge</button>
+  <div id="targetLock"></div>
   <div id="hud">
     <div id="orientDisplay"></div>
     <div id="fpsDisplay"></div>
     <div id="stepsDisplay"></div>
     <div id="energyDisplay"></div>
+    <div id="energyBarContainer"><div id="energyBar"></div></div>
   </div>
   <script>
     let scene,camera,renderer,wallGrids,verticalLines,horizontalLines,floorGrid,raisedFloor;
@@ -46,11 +51,23 @@
     const fpsDisplay=document.getElementById('fpsDisplay');
     const stepsDisplay=document.getElementById('stepsDisplay');
     const energyDisplay=document.getElementById('energyDisplay');
-    const fireBtn=document.getElementById('fireBtn');
-    fireBtn.addEventListener('click',fireMissile);
+    const energyBar=document.getElementById('energyBar');
+    const chargeBtn=document.getElementById('chargeBtn');
+    const targetLock=document.getElementById('targetLock');
+    const sceneCanvas=document.getElementById('sceneCanvas');
+    let charging=false;
+    chargeBtn.addEventListener('mousedown',()=>charging=true);
+    chargeBtn.addEventListener('mouseup',()=>charging=false);
+    chargeBtn.addEventListener('mouseleave',()=>charging=false);
+    chargeBtn.addEventListener('touchstart',()=>{charging=true;});
+    chargeBtn.addEventListener('touchend',()=>{charging=false;});
+    chargeBtn.addEventListener('touchcancel',()=>{charging=false;});
+    sceneCanvas.addEventListener('click',e=>{showTargetLock(e.clientX,e.clientY);fireMissile();});
+    sceneCanvas.addEventListener('touchstart',e=>{const t=e.touches[0];showTargetLock(t.clientX,t.clientY);fireMissile();e.preventDefault();});
     let stepCount=0;
     let lastStepTime=0;
-    let energy=3;
+    let energy=0;
+    const MAX_ENERGY=10;
     const GRAVITY=9.8;
     const raycaster=new THREE.Raycaster();
     const clickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
@@ -131,6 +148,13 @@
       window.addEventListener('resize',onResize);
       window.addEventListener('orientationchange',onResize);
       renderer.domElement.addEventListener('click',handleClick);
+    }
+
+    function showTargetLock(x,y){
+      targetLock.style.left=(x-10)+'px';
+      targetLock.style.top=(y-10)+'px';
+      targetLock.style.display='block';
+      setTimeout(()=>targetLock.style.display='none',300);
     }
 
     function fireMissile(){
@@ -507,7 +531,7 @@
       const now=performance.now();
       if(deltaAcc>1.2&&now-lastStepTime>300){
         stepCount++;
-        energy++;
+        if(charging && energy<MAX_ENERGY) energy++;
         lastStepTime=now;
       }
     }
@@ -562,6 +586,7 @@
       fpsDisplay.textContent=`FPS: ${(1/delta).toFixed(1)}`;
       stepsDisplay.textContent=`Steps: ${stepCount}`;
       energyDisplay.textContent=`Energy: ${energy}`;
+      energyBar.style.width=(energy/MAX_ENERGY*100)+'%';
 
       const r=Math.PI/180;
       const orientRad=THREE.MathUtils.degToRad(orientDeg);

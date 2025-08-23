@@ -70,6 +70,13 @@ const pitchFilter = new OneEuroFilter(1.0, 0.01);
 const rollFilter = new OneEuroFilter(1.0, 0.01);
 let lastOrientationTs = null;
 
+function wrapAngle(a) {
+  a = a % (Math.PI * 2);
+  if (a < -Math.PI) a += Math.PI * 2;
+  if (a > Math.PI) a -= Math.PI * 2;
+  return a;
+}
+
 function updateOrientation() {
   sinYaw = Math.sin(camera.yaw);
   cosYaw = Math.cos(camera.yaw);
@@ -322,7 +329,7 @@ if (window.DeviceOrientationEvent) {
       }
       const diff = ((e.alpha - baseAlpha + 540) % 360) - 180;
       const yawRad = diff * Math.PI / 180 * orientationFactor;
-      camera.yaw = yawFilter.filter(yawRad, dt);
+      camera.yaw = wrapAngle(yawFilter.filter(yawRad, dt));
       camera.flyYaw = camera.yaw;
     }
     if (e.beta !== null) {
@@ -343,12 +350,12 @@ if (window.DeviceOrientationEvent) {
 function handleCameraInput() {
   // Left/right: rotate flying direction (and camera view)
   if (keyState['ArrowLeft'])  {
-    camera.yaw -= 0.02;
-    camera.flyYaw -= 0.02;
+    camera.yaw = wrapAngle(camera.yaw - 0.02);
+    camera.flyYaw = camera.yaw;
   }
   if (keyState['ArrowRight']) {
-    camera.yaw += 0.02;
-    camera.flyYaw += 0.02;
+    camera.yaw = wrapAngle(camera.yaw + 0.02);
+    camera.flyYaw = camera.yaw;
   }
   // Up/down: tilt camera (pitch)
   if (keyState['ArrowUp'])   camera.pitch = Math.max(camera.pitch - 0.012, minPitch);

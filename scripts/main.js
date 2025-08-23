@@ -1,5 +1,5 @@
 // Game version: 035 - dynamic sky colors
-import { hash, computeHeight, getColor, shadeColor, lightenColor, resetColorMap } from './utils.mjs';
+import { computeHeight, getColor, shadeColor, lightenColor } from './utils.mjs';
 import { OneEuroFilter } from './filters.mjs';
 
 const canvas = document.getElementById('gameCanvas');
@@ -31,6 +31,7 @@ let focal = (canvas.height / 2) / Math.tan(fieldOfView / 2);
 // Derived horizontal FOV for culling
 let horizontalFOV = 2 * Math.atan(Math.tan(fieldOfView / 2) * canvas.width / canvas.height);
 let cosHalfHFOV = Math.cos(horizontalFOV / 2);
+let cosHalfHFOVSq = cosHalfHFOV * cosHalfHFOV;
 // Scale factor to exaggerate depth and make far tiles smaller
 // Higher values create a stronger fish-eye perspective
 const perspectiveScale = 50;
@@ -38,13 +39,18 @@ const perspectiveScale = 50;
 // --- Terrain Height Functions ---
 // Implemented in utils.mjs
 
-// Per-frame height cache
-let heightCache = {};
+// Height cache with basic eviction to avoid recomputing terrain
+const heightCache = new Map();
+const HEIGHT_CACHE_LIMIT = 100000;
 function getHeight(x, y) {
-  const key = x + ',' + y;
-  if (heightCache[key] !== undefined) return heightCache[key];
+  const key = `${x},${y}`;
+  if (heightCache.has(key)) return heightCache.get(key);
   const h = computeHeight(x, y);
-  heightCache[key] = h;
+  if (heightCache.size >= HEIGHT_CACHE_LIMIT) {
+    const firstKey = heightCache.keys().next().value;
+    heightCache.delete(firstKey);
+  }
+  heightCache.set(key, h);
   return h;
 }
 
@@ -120,6 +126,7 @@ function updateOrientation() {
   cosRoll = Math.cos(camera.roll);
   horizontalFOV = 2 * Math.atan(Math.tan(fieldOfView / 2) * canvas.width / canvas.height);
   cosHalfHFOV = Math.cos(horizontalFOV / 2);
+  cosHalfHFOVSq = cosHalfHFOV * cosHalfHFOV;
 }
 const minPitch = 0; // allow looking straight ahead
 const maxPitch = Math.PI / 2.1;
@@ -176,8 +183,9 @@ function isTileVisible(x, y) {
   const dy = centerY - camera.y;
   const distSq = dx * dx + dy * dy;
   if (distSq === 0) return true;
-  const dot = (dx * cosYaw + dy * sinYaw) / Math.sqrt(distSq);
-  if (dot < cosHalfHFOV) return false;
+  const dot = dx * cosYaw + dy * sinYaw;
+  if (dot <= 0) return false;
+  if ((dot * dot) < distSq * cosHalfHFOVSq) return false;
   const proj = project3D(centerX, centerY, centerH);
   if (!proj) return false;
   let [sx, sy] = proj;
@@ -282,8 +290,6 @@ function drawSlopedTerrain(ctx) {
   ctx.rotate(camera.roll);
 
   let cx = camera.x, cy = camera.y;
-  heightCache = {};
-  resetColorMap();
   let windowRadius = tilesInView / 2 + 5;
 
   let drawList = [];

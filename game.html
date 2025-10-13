@@ -313,37 +313,52 @@
         });
       }
 
+      function dampHorizontalVelocity(value,delta){
+        const damping=Math.exp(-10*delta);
+        const next=value*damping;
+        return Math.abs(next)<0.01?0:next;
+      }
+
       function updateFallingTiles(delta){
         for(let i=fallingTiles.length-1;i>=0;i--){
           const tile=fallingTiles[i];
-          tile.position.addScaledVector(tile.userData.velocity,delta);
-          tile.userData.velocity.y-=GRAVITY*delta;
+          const velocity=tile.userData.velocity;
+          tile.position.addScaledVector(velocity,delta);
           const half=(tile.userData.height||tile.geometry.parameters.height)/2;
           const sizeHalf=(tile.userData.size||1)/2;
+          const resting=tile.position.y<=half+0.001 && velocity.y<=0.01;
+          if(resting){
+            tile.position.y=half;
+            velocity.y=0;
+            velocity.x=dampHorizontalVelocity(velocity.x,delta);
+            velocity.z=dampHorizontalVelocity(velocity.z,delta);
+          }else{
+            velocity.y-=GRAVITY*delta;
+          }
           if(tile.position.y<half){
             tile.position.y=half;
-            tile.userData.velocity.y*=-0.7;
-            tile.userData.velocity.x*=0.9;
-            tile.userData.velocity.z*=0.9;
+            velocity.y*=-0.7;
+            velocity.x*=0.9;
+            velocity.z*=0.9;
             if(tile.userData.canSplit && !tile.userData.hasSplit){
               splitTileIntoFragments(tile);
               fallingTiles.splice(i,1);
               continue;
             }
-            if(Math.abs(tile.userData.velocity.y)<0.1){
-              tile.userData.velocity.y=0;
+            if(Math.abs(velocity.y)<0.1){
+              velocity.y=0;
             }
           }
           const limit=ROOM_SIZE/2-sizeHalf;
           if(tile.position.x<-limit || tile.position.x>limit){
             tile.position.x=THREE.MathUtils.clamp(tile.position.x,-limit,limit);
-            tile.userData.velocity.x*=-0.7;
+            velocity.x*=-0.7;
           }
           if(tile.position.z<-limit || tile.position.z>limit){
             tile.position.z=THREE.MathUtils.clamp(tile.position.z,-limit,limit);
-            tile.userData.velocity.z*=-0.7;
+            velocity.z*=-0.7;
           }
-          if(tile.position.y<=half && tile.userData.velocity.length()<0.05){
+          if(tile.position.y<=half && velocity.length()<0.05){
             fallingTiles.splice(i,1);
           }
         }

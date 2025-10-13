@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAME v0.22</title>
+  <title>GAME</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body,html{margin:0;padding:0;overflow:hidden;background:#000;}
     #sceneCanvas{display:block;width:100vw;height:100vh;}
     #permissionBtn{position:absolute;top:20px;left:20px;padding:10px 20px;font-family:sans-serif;font-size:16px;}
     #hud{position:absolute;top:10px;right:10px;color:#fff;font-family:sans-serif;font-size:14px;text-align:right;line-height:1.4;}
+    #versionBadge{opacity:0.75;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
     #targetLock{position:absolute;width:20px;height:20px;border:2px solid red;border-radius:50%;pointer-events:none;display:none;}
     #energyBarContainer{position:absolute;top:20px;left:20px;width:300px;height:20px;border:2px solid #fff;background:#222;}
     #energyBar{height:100%;width:100%;background:hsl(120,100%,50%);transform-origin:left;}
@@ -23,11 +24,16 @@
   <div id="targetLock"></div>
   <div id="energyBarContainer"><div id="energyBar"></div></div>
   <div id="hud">
+    <div id="versionBadge" data-version-prefix="Version " data-version></div>
     <div id="orientDisplay"></div>
     <div id="fpsDisplay"></div>
     <div id="stepsDisplay"></div>
     <div id="energyDisplay"></div>
   </div>
+  <script type="module">
+    import { applyVersionMetadata } from './scripts/version.mjs';
+    applyVersionMetadata({ titleBase: 'GAME' });
+  </script>
   <script>
     let scene,camera,renderer,wallGrids,verticalLines,horizontalLines,floorGrid,raisedFloor;
     let waterGeom,waterMesh;

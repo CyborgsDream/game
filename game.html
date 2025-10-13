@@ -368,7 +368,7 @@
           fragment.add(new THREE.LineSegments(edges,edgeMat));
           fragment.position.set(
             origin.x+ox*pieceSize+(Math.random()-0.5)*0.1,
-            pieceHalf+0.05,
+            origin.y+pieceHalf+(Math.random()-0.5)*0.1,
             origin.z+oz*pieceSize+(Math.random()-0.5)*0.1
           );
           const velocity=baseVelocity.clone();
@@ -491,7 +491,7 @@
                 (tile.position.z-exp.center.z)
               );
               scene.add(tile);
-              fallingTiles.push(tile);
+              splitTileIntoFragments(tile);
             });
             explosions.splice(i,1);
           }

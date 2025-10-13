@@ -319,6 +319,11 @@
             tile.userData.velocity.y*=-0.7;
             tile.userData.velocity.x*=0.9;
             tile.userData.velocity.z*=0.9;
+            if(tile.userData.canSplit && !tile.userData.hasSplit){
+              splitTileIntoFragments(tile);
+              fallingTiles.splice(i,1);
+              continue;
+            }
             if(Math.abs(tile.userData.velocity.y)<0.1){
               tile.userData.velocity.y=0;
             }
@@ -336,6 +341,59 @@
             fallingTiles.splice(i,1);
           }
         }
+      }
+
+      function splitTileIntoFragments(tile){
+        tile.userData.hasSplit=true;
+        const origin=tile.position.clone();
+        const baseVelocity=tile.userData.velocity.clone();
+        const size=tile.userData.size||1;
+        const height=tile.userData.height||(tile.geometry&&tile.geometry.parameters?tile.geometry.parameters.height:1);
+        const baseColor=tile.userData.baseColor||(tile.material&&tile.material.color?tile.material.color.getHex():0xffffff);
+        const pieceSize=size/2;
+        const pieceHeight=Math.max(height/2,0.05);
+        const pieceHalf=pieceHeight/2;
+        const offsets=[
+          [-0.5,-0.5],
+          [0.5,-0.5],
+          [-0.5,0.5],
+          [0.5,0.5]
+        ];
+        offsets.forEach(([ox,oz])=>{
+          const geo=new THREE.BoxGeometry(pieceSize,pieceHeight,pieceSize);
+          const mat=new THREE.MeshBasicMaterial({color:baseColor});
+          const fragment=new THREE.Mesh(geo,mat);
+          const edges=new THREE.EdgesGeometry(geo);
+          const edgeMat=new THREE.LineBasicMaterial({color:0xffffff});
+          fragment.add(new THREE.LineSegments(edges,edgeMat));
+          fragment.position.set(
+            origin.x+ox*pieceSize+(Math.random()-0.5)*0.1,
+            pieceHalf+0.05,
+            origin.z+oz*pieceSize+(Math.random()-0.5)*0.1
+          );
+          const velocity=baseVelocity.clone();
+          velocity.multiplyScalar(0.6);
+          velocity.x+=ox*1.2+(Math.random()-0.5)*0.5;
+          velocity.z+=oz*1.2+(Math.random()-0.5)*0.5;
+          velocity.y=Math.abs(velocity.y)+1.5+Math.random()*0.5;
+          fragment.userData.baseColor=baseColor;
+          fragment.userData.height=pieceHeight;
+          fragment.userData.size=pieceSize;
+          fragment.userData.alive=false;
+          fragment.userData.falling=true;
+          fragment.userData.velocity=velocity;
+          fragment.userData.canSplit=false;
+          fragment.userData.hasSplit=true;
+          scene.add(fragment);
+          fallingTiles.push(fragment);
+        });
+        tile.children.forEach(child=>{
+          if(child.geometry) child.geometry.dispose();
+          if(child.material) child.material.dispose();
+        });
+        scene.remove(tile);
+        if(tile.geometry) tile.geometry.dispose();
+        if(tile.material) tile.material.dispose();
       }
 
       function spawnBomb(){
@@ -425,6 +483,8 @@
               tile.material.color.set(tile.userData.baseColor);
               tile.userData.alive=false;
               tile.userData.falling=true;
+              tile.userData.canSplit=true;
+              tile.userData.hasSplit=false;
               tile.userData.velocity=new THREE.Vector3(
                 (tile.position.x-exp.center.x),
                 4+Math.random()*2,

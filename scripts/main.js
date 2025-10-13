@@ -1,10 +1,13 @@
-// Game version: 035 - dynamic sky colors
+// Game version: 036 - centralized version metadata
+import { applyVersionMetadata, VERSION_TAG } from './version.mjs';
 import { computeHeight, getColor, shadeColor, lightenColor } from './utils.mjs';
 import { OneEuroFilter } from './filters.mjs';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const debugEl = document.getElementById('debug');
+
+applyVersionMetadata({ titleBase: 'Terrain Demo' });
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -167,6 +170,7 @@ function updateCamera() {
 function updateDebugInfo() {
   if (!showDebug) return;
   debugEl.textContent =
+    `ver:${VERSION_TAG} ` +
     `x:${camera.x.toFixed(2)} y:${camera.y.toFixed(2)} ` +
     `yaw:${(camera.yaw * 180 / Math.PI).toFixed(1)} ` +
     `pitch:${(camera.pitch * 180 / Math.PI).toFixed(1)} ` +

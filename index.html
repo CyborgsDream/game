@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to the Game v0.22</title>
+  <title>Welcome to the Game</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body {
@@ -50,6 +50,13 @@
     a.play-button:hover {
       background: #e64a19;
     }
+    .version-tag {
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
@@ -58,7 +65,12 @@
     <h1>Welcome to the Game</h1>
     <p>Prepare yourself for an immersive 3D experience.</p>
     <a class="play-button" href="game.html">Play Now</a>
+    <p class="version-tag" data-version-prefix="Version " data-version></p>
   </main>
+  <script type="module">
+    import { applyVersionMetadata } from './scripts/version.mjs';
+    applyVersionMetadata({ titleBase: 'Welcome to the Game' });
+  </script>
   <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);

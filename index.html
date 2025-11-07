@@ -6,6 +6,15 @@
   <title>Welcome to the Game</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
+    :root {
+      color-scheme: dark;
+      --accent: #64e7ff;
+      --accent-strong: #ff4f9f;
+      --accent-soft: #7c5bff;
+    }
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       padding: 0;
@@ -13,49 +22,214 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: sans-serif;
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
-      color: #fff;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(124, 91, 255, 0.25), transparent 40%),
+        radial-gradient(circle at 80% 10%, rgba(255, 79, 159, 0.2), transparent 45%),
+        linear-gradient(135deg, #050918, #101c3d 60%, #090f2a);
+      color: #eef5ff;
       text-align: center;
       position: relative;
       overflow: hidden;
     }
     #bg {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
       width: 100%;
       height: 100%;
       z-index: 0;
-      filter: blur(2px);
+      filter: saturate(1.6) blur(1.2px);
+      opacity: 0.9;
     }
     main {
       position: relative;
       z-index: 1;
+      padding: 3.5rem clamp(2rem, 6vw, 4rem);
+      width: min(720px, 92vw);
+      border-radius: 28px;
+      background: rgba(8, 12, 32, 0.55);
+      box-shadow:
+        0 18px 40px rgba(9, 15, 42, 0.55),
+        inset 0 0 0 1px rgba(100, 231, 255, 0.08);
+      backdrop-filter: blur(12px) saturate(130%);
     }
     h1 {
-      font-size: 3rem;
-      margin-bottom: 1rem;
+      font-size: clamp(2.4rem, 6vw, 3.5rem);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
-    a.play-button {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      background: #ff5722;
-      color: #fff;
-      border-radius: 4px;
+    .intro {
+      margin: 0 auto 2.5rem;
+      max-width: 34rem;
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: rgba(232, 240, 255, 0.84);
+    }
+    .menu {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2.75rem;
+      padding-bottom: 0.75rem;
+    }
+    .menu-highlight {
+      position: absolute;
+      bottom: 0;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-strong));
+      width: 0;
+      transform: translateX(0);
+      opacity: 0;
+      transition: transform 250ms ease, width 250ms ease, opacity 250ms ease;
+      pointer-events: none;
+    }
+    .menu-item {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem 1.6rem;
+      border-radius: 999px;
       text-decoration: none;
-      font-size: 1.25rem;
-      transition: background 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: rgba(238, 245, 255, 0.7);
+      background: rgba(15, 24, 55, 0.65);
+      border: 1px solid rgba(100, 231, 255, 0.18);
+      transition: transform 250ms ease, box-shadow 250ms ease, color 250ms ease, border-color 250ms ease;
+      overflow: hidden;
+      isolation: isolate;
+      animation: float 7s ease-in-out infinite;
     }
-    a.play-button:hover {
-      background: #e64a19;
+    .menu-item::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(124, 91, 255, 0.35), transparent 55%, rgba(255, 79, 159, 0.35));
+      opacity: 0;
+      transition: opacity 250ms ease;
+      z-index: -1;
     }
-    .version-tag {
-      margin-top: 1.5rem;
-      font-size: 0.9rem;
+    .menu-item:nth-child(2) { --float-delay: -1.4s; }
+    .menu-item:nth-child(3) { --float-delay: -2.8s; }
+    .menu-item:nth-child(4) { --float-delay: -4.2s; }
+    .menu-item {
+      animation-delay: var(--float-delay, 0s);
+    }
+    .menu-item:hover,
+    .menu-item:focus-visible {
+      transform: translateY(-6px) scale(1.03);
+      color: #ffffff;
+      border-color: rgba(100, 231, 255, 0.65);
+      box-shadow: 0 12px 25px rgba(100, 231, 255, 0.14);
+    }
+    .menu-item:hover::before,
+    .menu-item:focus-visible::before,
+    .menu-item.active::before {
+      opacity: 1;
+    }
+    .menu-item.active {
+      color: #fff;
+      border-color: rgba(255, 79, 159, 0.75);
+      box-shadow:
+        0 10px 28px rgba(124, 91, 255, 0.24),
+        inset 0 0 0 1px rgba(255, 79, 159, 0.25);
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.02); }
+    }
+    .search-area {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    .search-label {
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(238, 245, 255, 0.55);
+    }
+    .search-form {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: rgba(8, 20, 48, 0.85);
+      border-radius: 18px;
+      padding: 0.8rem 1rem;
+      border: 1px solid rgba(100, 231, 255, 0.35);
+      box-shadow: inset 0 0 0 1px rgba(124, 91, 255, 0.18), 0 16px 32px rgba(5, 9, 24, 0.45);
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    }
+    .search-form:focus-within {
+      transform: translateY(-3px);
+      border-color: rgba(100, 231, 255, 0.75);
+      box-shadow:
+        inset 0 0 0 1px rgba(100, 231, 255, 0.45),
+        0 22px 40px rgba(16, 36, 86, 0.55);
+    }
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 1.1rem;
+      color: #ffffff;
+      font-family: inherit;
+      letter-spacing: 0.02em;
+    }
+    .search-input::placeholder {
+      color: rgba(208, 225, 255, 0.55);
+      font-style: italic;
+    }
+    .search-button {
+      margin-left: 0.75rem;
+      padding: 0.65rem 1.2rem;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, rgba(124, 91, 255, 0.9), rgba(255, 79, 159, 0.95));
+      color: #fff;
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      opacity: 0.85;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(255, 79, 159, 0.35);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .search-button:hover,
+    .search-button:focus-visible {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 14px 28px rgba(255, 79, 159, 0.45);
+    }
+    .version-tag {
+      margin-top: 2.5rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+    @media (max-width: 600px) {
+      main {
+        padding: 2.5rem 1.6rem 3rem;
+      }
+      .menu-item {
+        width: 100%;
+      }
+      .search-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .search-button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -63,8 +237,20 @@
   <canvas id="bg"></canvas>
   <main>
     <h1>Welcome to the Game</h1>
-    <p>Prepare yourself for an immersive 3D experience.</p>
-    <a class="play-button" href="game.html">Play Now</a>
+    <p class="intro">Navigate surreal arenas, craft your own encounters, and dive into shimmering digital dreamscapes backed by our neon simulation engine.</p>
+    <nav class="menu" aria-label="Main menu">
+      <div class="menu-highlight" aria-hidden="true"></div>
+      <a class="menu-item active" href="game.html">Enter Arena</a>
+      <a class="menu-item" href="terrain.html">Explore Terrain</a>
+      <a class="menu-item" href="#" data-future="soon">Multiplayer Soon</a>
+    </nav>
+    <div class="search-area">
+      <span class="search-label">Scenario prompt</span>
+      <form class="search-form" action="#" method="get" role="search">
+        <input class="search-input" type="search" name="prompt" placeholder="Describe the challenge you want to spawn..." aria-label="Scenario prompt" />
+        <button class="search-button" type="submit">Generate</button>
+      </form>
+    </div>
     <p class="version-tag" data-version-prefix="Version " data-version></p>
   </main>
   <script type="module">
@@ -72,26 +258,106 @@
     applyVersionMetadata({ titleBase: 'Welcome to the Game' });
   </script>
   <script>
+    const canvas = document.getElementById('bg');
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 5, 12);
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true, alpha: true });
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 0, 20);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
 
-    const group = new THREE.Group();
-    const size = 10;
-    for (let x = -size; x <= size; x += 2) {
-      for (let z = -size; z <= size; z += 2) {
-        const geom = new THREE.BoxGeometry(1.8, 0.2, 1.8);
-        const edges = new THREE.EdgesGeometry(geom);
-        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.5 }));
-        line.position.set(x, 0, z);
-        group.add(line);
-      }
+    const ambient = new THREE.AmbientLight(0x4488ff, 0.35);
+    scene.add(ambient);
+    const keyLight = new THREE.PointLight(0xff4f9f, 1.1, 120);
+    keyLight.position.set(6, 4, 6);
+    scene.add(keyLight);
+    const rimLight = new THREE.PointLight(0x64e7ff, 1.35, 140);
+    rimLight.position.set(-8, -6, 10);
+    scene.add(rimLight);
+
+    const sphereGroup = new THREE.Group();
+    scene.add(sphereGroup);
+
+    const sphereGeometry = new THREE.SphereGeometry(6, 8, 4); // 64 neon faces
+    const shellMaterial = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('hsl(210, 92%, 65%)'),
+      emissive: new THREE.Color('hsl(200, 100%, 35%)'),
+      emissiveIntensity: 1.1,
+      metalness: 0.85,
+      roughness: 0.2,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide
+    });
+    const sphereShell = new THREE.Mesh(sphereGeometry, shellMaterial);
+    sphereShell.scale.setScalar(1.05);
+    sphereGroup.add(sphereShell);
+
+    const edges = new THREE.EdgesGeometry(sphereGeometry);
+    const neonPalette = [0xff4f9f, 0x64e7ff, 0x7c5bff];
+    neonPalette.forEach((color, index) => {
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.62 - index * 0.12,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const wire = new THREE.LineSegments(edges, lineMaterial);
+      const scale = 1 + index * 0.035;
+      wire.scale.set(scale, scale, scale);
+      wire.rotation.y = index * 0.6;
+      sphereGroup.add(wire);
+    });
+
+    const starGeometry = sphereGeometry.clone();
+    const colors = [];
+    const positionAttr = starGeometry.getAttribute('position');
+    const vertexCount = positionAttr.count;
+    for (let i = 0; i < vertexCount; i++) {
+      const color = new THREE.Color();
+      color.setHSL(0.55 + 0.1 * Math.sin(i), 0.95, 0.65 + 0.15 * Math.cos(i * 0.6));
+      colors.push(color.r, color.g, color.b);
     }
-    scene.add(group);
+    starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    const starMaterial = new THREE.PointsMaterial({
+      size: 0.18,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      vertexColors: true
+    });
+    const starfield = new THREE.Points(starGeometry, starMaterial);
+    sphereGroup.add(starfield);
 
+    const trailGeometry = new THREE.TorusGeometry(8.5, 0.08, 16, 120);
+    const trailMaterial = new THREE.MeshBasicMaterial({
+      color: new THREE.Color('hsl(290, 100%, 70%)'),
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending
+    });
+    const trail = new THREE.Mesh(trailGeometry, trailMaterial);
+    trail.rotation.x = Math.PI / 3.2;
+    sphereGroup.add(trail);
+
+    const trail2 = trail.clone();
+    trail2.material = trailMaterial.clone();
+    trail2.material.color = new THREE.Color('hsl(180, 100%, 65%)');
+    trail2.rotation.x = -Math.PI / 2.6;
+    sphereGroup.add(trail2);
+
+    const pointer = new THREE.Vector2();
+    function handlePointerMove(event) {
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+    window.addEventListener('pointermove', handlePointerMove);
+
+    const clock = new THREE.Clock();
     function onResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -99,15 +365,79 @@
     }
     window.addEventListener('resize', onResize);
 
-    function animate(time) {
+    function animate() {
       requestAnimationFrame(animate);
-      group.rotation.y = time * 0.0002;
-      group.children.forEach((c, i) => {
-        c.position.y = 0.4 * Math.sin(time * 0.001 + i);
-      });
+      const elapsed = clock.getElapsedTime();
+      sphereGroup.rotation.y = elapsed * 0.25;
+      sphereGroup.rotation.x = Math.sin(elapsed * 0.35) * 0.25;
+      starfield.rotation.y = elapsed * 0.4;
+      trail.rotation.z = elapsed * 0.12;
+      trail2.rotation.z = -elapsed * 0.15;
+
+      const targetX = pointer.x * 0.4;
+      const targetY = pointer.y * 0.3;
+      camera.position.x += (targetX - camera.position.x) * 0.05;
+      camera.position.y += (targetY - camera.position.y) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      keyLight.intensity = 1.05 + Math.sin(elapsed * 2.4) * 0.1;
+      rimLight.intensity = 1.25 + Math.cos(elapsed * 1.8) * 0.12;
+
       renderer.render(scene, camera);
     }
     animate();
+
+    const menu = document.querySelector('.menu');
+    const highlight = document.querySelector('.menu-highlight');
+    const menuItems = Array.from(document.querySelectorAll('.menu-item'));
+
+    function updateHighlight(target) {
+      if (!target || !highlight || !menu) return;
+      const rect = target.getBoundingClientRect();
+      const parentRect = menu.getBoundingClientRect();
+      highlight.style.width = `${rect.width}px`;
+      highlight.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+      highlight.style.opacity = '1';
+    }
+
+    function setActive(item) {
+      menuItems.forEach(link => link.classList.toggle('active', link === item));
+      updateHighlight(item);
+    }
+
+    menuItems.forEach(item => {
+      item.addEventListener('mouseenter', () => updateHighlight(item));
+      item.addEventListener('focus', () => updateHighlight(item));
+      item.addEventListener('mouseleave', () => {
+        const active = menuItems.find(link => link.classList.contains('active'));
+        if (active) {
+          updateHighlight(active);
+        } else {
+          highlight.style.opacity = '0';
+        }
+      });
+      item.addEventListener('blur', () => {
+        const active = menuItems.find(link => link.classList.contains('active'));
+        if (active) {
+          updateHighlight(active);
+        } else {
+          highlight.style.opacity = '0';
+        }
+      });
+      item.addEventListener('click', event => {
+        if (item.dataset.future) {
+          event.preventDefault();
+        }
+        setActive(item);
+      });
+    });
+
+    window.addEventListener('load', () => {
+      const active = menuItems.find(link => link.classList.contains('active'));
+      if (active) {
+        updateHighlight(active);
+      }
+    });
   </script>
 </body>
 </html>

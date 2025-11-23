@@ -80,30 +80,6 @@
       color: var(--muted);
     }
 
-    .cta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    a.button {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.9rem 1.35rem;
-      border-radius: 12px;
-      text-decoration: none;
-      color: #05060c;
-      background: var(--accent);
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
-    }
-
-    a.button:hover { transform: translateY(-1px); box-shadow: 0 16px 38px rgba(125, 247, 255, 0.3); }
-
-    a.secondary { background: transparent; color: var(--text); border: 1px solid rgba(255, 255, 255, 0.18); }
-
     .reel-wrap {
       perspective: 1200px;
       position: relative;
@@ -142,6 +118,9 @@
       display: grid;
       place-items: center;
       color: var(--text);
+      text-decoration: none;
+      transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      cursor: pointer;
       backdrop-filter: blur(6px);
     }
 
@@ -162,6 +141,35 @@
       text-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     }
 
+    .panel:hover,
+    .panel:focus-visible {
+      border-color: rgba(125, 247, 255, 0.5);
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 125, 228, 0.25);
+      transform: translateZ(10px) scale(1.02) rotateX(-4deg);
+      outline: none;
+    }
+
+    .panel:active {
+      transform: translateZ(4px) scale(0.99) rotateX(-2deg);
+    }
+
+    .svg-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      opacity: 0.6;
+      filter: drop-shadow(0 10px 45px rgba(125, 247, 255, 0.28));
+      pointer-events: none;
+    }
+
+    .orbital { animation: orbit 36s linear infinite; transform-origin: 50% 50%; }
+    .orbital.reverse { animation-direction: reverse; animation-duration: 48s; }
+
+    @keyframes orbit {
+      from { transform: rotateX(18deg) rotateY(-22deg) rotateZ(0deg) scale3d(1, 1, 1); }
+      to { transform: rotateX(18deg) rotateY(-22deg) rotateZ(360deg) scale3d(1, 1, 1); }
+    }
+
     footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: rgba(255, 255, 255, 0.65); font-size: 0.95rem; }
 
     @keyframes spin {
@@ -171,6 +179,37 @@
   </style>
 </head>
 <body>
+  <svg class="svg-backdrop" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="orbGradA" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#7df7ff" stop-opacity="0.9" />
+        <stop offset="100%" stop-color="#3c1b7a" stop-opacity="0.45" />
+      </linearGradient>
+      <linearGradient id="orbGradB" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#ff7de4" stop-opacity="0.9" />
+        <stop offset="100%" stop-color="#103e7a" stop-opacity="0.4" />
+      </linearGradient>
+      <radialGradient id="orbGlow" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#b9f7ff" stop-opacity="0.8" />
+        <stop offset="100%" stop-color="#05060c" stop-opacity="0" />
+      </radialGradient>
+      <filter id="depth" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+    <g class="orbital" filter="url(#depth)">
+      <ellipse cx="420" cy="360" rx="220" ry="140" fill="url(#orbGlow)" />
+      <path d="M420 90 C520 160 620 300 520 420 C420 540 260 520 220 400 C180 280 320 20 420 90Z" fill="url(#orbGradA)" opacity="0.68" />
+    </g>
+    <g class="orbital reverse" filter="url(#depth)">
+      <ellipse cx="820" cy="480" rx="240" ry="160" fill="url(#orbGlow)" opacity="0.8" />
+      <path d="M760 660 C880 640 1020 520 980 380 C940 240 820 220 720 240 C620 260 620 380 700 500 C760 592 720 680 760 660Z" fill="url(#orbGradB)" opacity="0.72" />
+    </g>
+  </svg>
   <main>
     <header>
       <div class="mark">3D</div>
@@ -182,25 +221,37 @@
 
     <section class="hero">
       <div class="copy">
-        <p>Show players what awaits inside the build: luminous canyons, rolling horizon lines, and the ability to steer with keys or device tilt. This landing keeps the focus on your WebGL demo while giving you space for marketing copy.</p>
-        <div class="cta-row">
-          <a class="button" href="game.html">Launch flight demo</a>
-          <a class="button secondary" href="terrain.html">Open classic view</a>
-        </div>
+        <p>Show players what awaits inside the build: luminous canyons, rolling horizon lines, and the ability to steer with keys or device tilt. Spin the ring below and tap a panel to jump straight into the demo you want.</p>
       </div>
-      <div class="reel-wrap" aria-hidden="true">
+      <nav class="reel-wrap" aria-label="Demo reel navigation">
         <div class="glow-ring"></div>
         <div class="reel">
-          <div class="panel" style="transform: rotateY(0deg) translateZ(260px);"><span>Neon dunes</span></div>
-          <div class="panel" style="transform: rotateY(45deg) translateZ(260px);"><span>Volumetric haze</span></div>
-          <div class="panel" style="transform: rotateY(90deg) translateZ(260px);"><span>Dynamic sky</span></div>
-          <div class="panel" style="transform: rotateY(135deg) translateZ(260px);"><span>Missile trails</span></div>
-          <div class="panel" style="transform: rotateY(180deg) translateZ(260px);"><span>Tilt controls</span></div>
-          <div class="panel" style="transform: rotateY(225deg) translateZ(260px);"><span>Grid horizon</span></div>
-          <div class="panel" style="transform: rotateY(270deg) translateZ(260px);"><span>Explosions</span></div>
-          <div class="panel" style="transform: rotateY(315deg) translateZ(260px);"><span>Reactive FOV</span></div>
+          <a class="panel" style="transform: rotateY(0deg) translateZ(260px);" href="game.html">
+            <span>Flight demo</span>
+          </a>
+          <a class="panel" style="transform: rotateY(45deg) translateZ(260px);" href="terrain.html">
+            <span>Classic view</span>
+          </a>
+          <a class="panel" style="transform: rotateY(90deg) translateZ(260px);" href="game.html#haze">
+            <span>Volumetric haze</span>
+          </a>
+          <a class="panel" style="transform: rotateY(135deg) translateZ(260px);" href="game.html#trails">
+            <span>Missile trails</span>
+          </a>
+          <a class="panel" style="transform: rotateY(180deg) translateZ(260px);" href="terrain.html#tilt">
+            <span>Tilt controls</span>
+          </a>
+          <a class="panel" style="transform: rotateY(225deg) translateZ(260px);" href="terrain.html#grid">
+            <span>Grid horizon</span>
+          </a>
+          <a class="panel" style="transform: rotateY(270deg) translateZ(260px);" href="game.html#boom">
+            <span>Explosions</span>
+          </a>
+          <a class="panel" style="transform: rotateY(315deg) translateZ(260px);" href="game.html#fov">
+            <span>Reactive FOV</span>
+          </a>
         </div>
-      </div>
+      </nav>
     </section>
 
     <footer>

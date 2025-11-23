@@ -4,6 +4,6 @@
 A modern HTML5 3D terrain engine starter.
 
 ## Files
-- `index.html` - landing page with floating wireframe grid.
-- `game.html` - 3D scene with water, bombs, orientation controls, and a HUD showing gyroscope angles, FPS, and step count.
+- `index.html` - landing page with a rotating 3D reel hero and CTA buttons into the demos.
+- `game.html` - restored terrain flight demo with calibrate control, HUD overlay, and version badge.
 - `terrain.html` - classic pseudo-3D terrain with auto-floating camera.

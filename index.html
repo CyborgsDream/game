@@ -7,145 +7,166 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0f1a;
-      --panel: rgba(255, 255, 255, 0.04);
-      --accent: #5df4c5;
-      --muted: rgba(235, 241, 248, 0.72);
-      --text: #f7fbff;
+      --bg: #060910;
+      --panel: rgba(255, 255, 255, 0.05);
+      --accent: #7df7ff;
+      --accent-2: #ff7de4;
+      --text: #eef5ff;
+      --muted: rgba(238, 245, 255, 0.7);
       font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-      letter-spacing: 0.02em;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;
-      background: radial-gradient(circle at 18% 24%, rgba(93, 244, 197, 0.16), transparent 32%),
-        radial-gradient(circle at 82% 12%, rgba(94, 178, 255, 0.16), transparent 30%),
-        var(--bg);
+      background:
+        radial-gradient(circle at 18% 24%, rgba(125, 247, 255, 0.14), transparent 32%),
+        radial-gradient(circle at 78% 14%, rgba(255, 125, 228, 0.12), transparent 28%),
+        linear-gradient(135deg, #05060c, #0d1220 45%, #05060c);
       color: var(--text);
+      padding: clamp(16px, 4vw, 32px);
     }
 
     main {
-      width: min(960px, 92vw);
-      padding: clamp(1.5rem, 3vw, 2.25rem);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      width: min(1080px, 100%);
       border-radius: 18px;
-      background: linear-gradient(140deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
-      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(6px);
+      padding: clamp(18px, 3vw, 30px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+      box-shadow: 0 40px 90px rgba(0, 0, 0, 0.45);
       display: grid;
-      gap: clamp(1.5rem, 4vw, 2.5rem);
+      gap: clamp(1.2rem, 2vw, 1.6rem);
     }
 
     header {
       display: flex;
-      gap: 1.25rem;
       align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
 
     .mark {
-      width: 54px;
-      height: 54px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: linear-gradient(145deg, rgba(93, 244, 197, 0.3), rgba(93, 244, 197, 0));
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: linear-gradient(145deg, rgba(125, 247, 255, 0.3), rgba(255, 125, 228, 0.3));
       display: grid;
       place-items: center;
-      color: var(--bg);
-      font-weight: 700;
+      color: #05060c;
+      font-weight: 800;
       letter-spacing: 0.08em;
+      text-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
     }
 
-    h1 {
-      margin: 0;
-      font-size: clamp(2.4rem, 5vw, 3.4rem);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+    h1 { margin: 0; font-size: clamp(2.2rem, 5vw, 3.2rem); letter-spacing: 0.08em; text-transform: uppercase; }
+    .tagline { margin: 0.35rem 0 0; color: var(--muted); font-size: clamp(1rem, 2.5vw, 1.2rem); }
 
-    .tagline {
-      margin: 0.35rem 0 0;
-      color: var(--muted);
-      font-size: clamp(1rem, 2.5vw, 1.2rem);
-    }
-
-    .summary {
+    .hero {
       display: grid;
-      gap: 1rem;
-      line-height: 1.6;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: clamp(1rem, 2vw, 1.4rem);
+      align-items: center;
+    }
+
+    .copy {
+      display: grid;
+      gap: 0.9rem;
+      line-height: 1.7;
       color: var(--muted);
     }
 
     .cta-row {
       display: flex;
-      gap: 0.75rem;
       flex-wrap: wrap;
+      gap: 0.75rem;
     }
 
     a.button {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.85rem 1.4rem;
+      padding: 0.9rem 1.35rem;
       border-radius: 12px;
       text-decoration: none;
-      color: var(--bg);
+      color: #05060c;
       background: var(--accent);
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.04em;
-      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
     }
 
-    a.button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 15px 30px rgba(93, 244, 197, 0.25);
+    a.button:hover { transform: translateY(-1px); box-shadow: 0 16px 38px rgba(125, 247, 255, 0.3); }
+
+    a.secondary { background: transparent; color: var(--text); border: 1px solid rgba(255, 255, 255, 0.18); }
+
+    .reel-wrap {
+      perspective: 1200px;
+      position: relative;
+      min-height: 320px;
     }
 
-    a.secondary {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+    .glow-ring {
+      position: absolute;
+      inset: 12% 4% auto;
+      height: 22px;
+      background: radial-gradient(circle, rgba(125, 247, 255, 0.6), rgba(125, 247, 255, 0));
+      filter: blur(18px);
+      opacity: 0.6;
     }
 
-    .grid {
+    .reel {
+      position: relative;
+      width: min(520px, 100%);
+      height: 320px;
+      margin: 0 auto;
+      transform-style: preserve-3d;
+      animation: spin 22s linear infinite;
+    }
+
+    .panel {
+      position: absolute;
+      width: 220px;
+      height: 140px;
+      left: calc(50% - 110px);
+      top: 90px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(125, 247, 255, 0.18);
+      overflow: hidden;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
+      place-items: center;
+      color: var(--text);
+      backdrop-filter: blur(6px);
     }
 
-    .card {
-      padding: 1rem 1.1rem;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      background: var(--panel);
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(125, 247, 255, 0.18), transparent 50%),
+        radial-gradient(circle at 70% 70%, rgba(255, 125, 228, 0.2), transparent 40%);
+      mix-blend-mode: screen;
     }
 
-    .card h3 {
-      margin: 0 0 0.35rem;
-      font-size: 0.95rem;
-      letter-spacing: 0.05em;
+    .panel span {
+      position: relative;
+      font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
+      text-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     }
 
-    .card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+    footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: rgba(255, 255, 255, 0.65); font-size: 0.95rem; }
 
-    footer {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-      color: rgba(255, 255, 255, 0.55);
-      font-size: 0.95rem;
+    @keyframes spin {
+      from { transform: rotateX(-8deg) rotateY(0deg); }
+      to { transform: rotateX(-8deg) rotateY(-360deg); }
     }
   </style>
 </head>
@@ -155,31 +176,31 @@
       <div class="mark">3D</div>
       <div>
         <h1>Driftspace</h1>
-        <p class="tagline">A quiet landing page for a fast, immersive 3D game experience.</p>
+        <p class="tagline">A cinematic reel for your terrain shooter.</p>
       </div>
     </header>
 
-    <section class="summary">
-      <p>Lightweight hero, focused copy, and just enough styling to keep the spotlight on the game. Swap assets, wire up your preferred build pipeline, and get players jumping in within minutes.</p>
-      <div class="cta-row">
-        <a class="button" href="game.html">Launch demo</a>
-        <a class="button secondary" href="terrain.html">Explore terrain</a>
+    <section class="hero">
+      <div class="copy">
+        <p>Show players what awaits inside the build: luminous canyons, rolling horizon lines, and the ability to steer with keys or device tilt. This landing keeps the focus on your WebGL demo while giving you space for marketing copy.</p>
+        <div class="cta-row">
+          <a class="button" href="game.html">Launch flight demo</a>
+          <a class="button secondary" href="terrain.html">Open classic view</a>
+        </div>
       </div>
-    </section>
-
-    <section class="grid" aria-label="Features">
-      <article class="card">
-        <h3>Clean palette</h3>
-        <p>Minimal gradients with subtle glassmorphism to frame your in-game shots.</p>
-      </article>
-      <article class="card">
-        <h3>Drop-in ready</h3>
-        <p>Point the primary call to action at your WebGL build or onboarding flow.</p>
-      </article>
-      <article class="card">
-        <h3>Built for focus</h3>
-        <p>No distractions—just a hero, succinct copy, and room for a trailer or logo.</p>
-      </article>
+      <div class="reel-wrap" aria-hidden="true">
+        <div class="glow-ring"></div>
+        <div class="reel">
+          <div class="panel" style="transform: rotateY(0deg) translateZ(260px);"><span>Neon dunes</span></div>
+          <div class="panel" style="transform: rotateY(45deg) translateZ(260px);"><span>Volumetric haze</span></div>
+          <div class="panel" style="transform: rotateY(90deg) translateZ(260px);"><span>Dynamic sky</span></div>
+          <div class="panel" style="transform: rotateY(135deg) translateZ(260px);"><span>Missile trails</span></div>
+          <div class="panel" style="transform: rotateY(180deg) translateZ(260px);"><span>Tilt controls</span></div>
+          <div class="panel" style="transform: rotateY(225deg) translateZ(260px);"><span>Grid horizon</span></div>
+          <div class="panel" style="transform: rotateY(270deg) translateZ(260px);"><span>Explosions</span></div>
+          <div class="panel" style="transform: rotateY(315deg) translateZ(260px);"><span>Reactive FOV</span></div>
+        </div>
+      </div>
     </section>
 
     <footer>

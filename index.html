@@ -24,34 +24,48 @@
     }
 
     main {
-      width: min(1400px, 100%);
+      width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1.4rem;
-      padding: 1.5rem;
+      gap: 1.6rem;
+      padding: 1.75rem;
       border-radius: 14px;
-      background: rgba(0, 8, 20, 0.5);
+      background: rgba(0, 8, 20, 0.55);
       box-shadow: 0 10px 45px rgba(0, 0, 0, 0.35), 0 0 60px rgba(26, 123, 255, 0.2);
       backdrop-filter: blur(6px);
     }
 
     h1 {
-      font-size: clamp(2.5rem, 4vw, 4rem);
-      letter-spacing: 2px;
+      font-size: clamp(2.75rem, 4.5vw, 4.25rem);
+      letter-spacing: 3px;
       margin: 0;
       text-transform: uppercase;
-      text-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 22px rgba(73, 168, 255, 0.65);
+      color: #d4e6ff;
+      text-shadow: 0 0 10px rgba(76, 168, 255, 0.9), 0 0 24px rgba(0, 180, 255, 0.45), 0 12px 32px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+
+    h1::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: -12px;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.9), transparent);
+      box-shadow: 0 0 14px rgba(0, 200, 255, 0.75);
     }
 
     .canvas-frame {
       width: 100%;
-      height: 50vh;
-      min-height: 320px;
+      height: 55vh;
+      min-height: 340px;
       border-radius: 14px;
       overflow: hidden;
       box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5), 0 0 60px rgba(26, 123, 255, 0.2);
-      background: linear-gradient(135deg, rgba(20, 35, 70, 0.8), rgba(10, 18, 36, 0.8));
+      background: linear-gradient(135deg, rgba(20, 35, 70, 0.85), rgba(10, 18, 36, 0.85));
     }
 
     #bg {
@@ -64,31 +78,34 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.75rem;
-      max-width: 760px;
+      gap: 0.9rem;
+      max-width: 780px;
     }
 
     p {
       margin: 0;
       color: #c8d7ff;
+      letter-spacing: 0.3px;
+      text-shadow: 0 0 12px rgba(100, 180, 255, 0.35);
     }
 
     a.play-button {
       display: inline-block;
-      padding: 0.75rem 1.5rem;
+      padding: 0.55rem 1.2rem;
       background: linear-gradient(120deg, #ff9800, #ff5722 40%, #ff3d7f);
       color: #fff;
       border-radius: 999px;
       text-decoration: none;
-      font-size: 1.25rem;
+      font-size: 1.05rem;
+      letter-spacing: 0.5px;
       transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s;
-      box-shadow: 0 10px 30px rgba(255, 87, 34, 0.35);
+      box-shadow: 0 8px 22px rgba(255, 87, 34, 0.3);
     }
 
     a.play-button:hover {
       background: linear-gradient(120deg, #ffc107, #ff7043 40%, #ff4da6);
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 15px 40px rgba(255, 105, 71, 0.45);
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 12px 28px rgba(255, 105, 71, 0.4);
     }
   </style>
 </head>
@@ -183,51 +200,6 @@
     terrain.receiveShadow = true;
     root.add(terrain);
 
-    // Crystal monoliths
-    const crystals = new THREE.Group();
-    const crystalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1c8adb,
-      emissive: 0x133d6a,
-      emissiveIntensity: 0.65,
-      metalness: 0.3,
-      roughness: 0.25,
-      flatShading: true,
-    });
-
-    for (let i = 0; i < 36; i++) {
-      const geom = new THREE.DodecahedronGeometry(THREE.MathUtils.randFloat(0.35, 1.6), 0);
-      const mesh = new THREE.Mesh(geom, crystalMaterial);
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 6 + Math.random() * 18;
-      const y = THREE.MathUtils.randFloat(0.3, 2.8);
-      mesh.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-      crystals.add(mesh);
-    }
-    root.add(crystals);
-
-    // Floating shards
-    const shards = new THREE.Group();
-    const shardMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffc857,
-      emissive: 0x753900,
-      emissiveIntensity: 0.5,
-      flatShading: true,
-      metalness: 0.2,
-      roughness: 0.4,
-    });
-
-    for (let i = 0; i < 120; i++) {
-      const geom = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.35), 0);
-      const mesh = new THREE.Mesh(geom, shardMaterial);
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 8 + Math.random() * 20;
-      const height = THREE.MathUtils.randFloat(1.5, 9);
-      mesh.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
-      shards.add(mesh);
-    }
-    root.add(shards);
-
     // Star particles
     const starGeom = new THREE.BufferGeometry();
     const starCount = 400;
@@ -266,16 +238,6 @@
       camera.lookAt(0, 2.5 + Math.sin(t * 0.2) * 0.5, 0);
 
       terrain.rotation.y = t * 0.0015;
-      crystals.children.forEach((c, i) => {
-        c.rotation.y += 0.002 + i * 0.0001;
-        c.position.y += Math.sin(t + i) * 0.0015;
-      });
-
-      shards.children.forEach((s, i) => {
-        s.rotation.x += 0.004 + i * 0.00001;
-        s.rotation.y += 0.005 + i * 0.000015;
-        s.position.y += Math.sin(t * 1.4 + i) * 0.0012;
-      });
 
       const flarePulse = (Math.sin(t * 2.0) + 1) * 0.35 + 0.4;
       warmFlare.material.opacity = flarePulse;

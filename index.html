@@ -8,7 +8,7 @@
   <style>
     body {
       margin: 0;
-      padding: 0;
+      padding: 1.25rem;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -25,14 +25,16 @@
 
     main {
       width: 100%;
+      max-width: 1180px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0;
-      padding: 0;
-      background: rgba(0, 8, 20, 0.55);
+      gap: 0.35rem;
+      padding: 0.75rem 1rem 1.35rem;
+      background: rgba(0, 8, 20, 0.58);
       box-shadow: 0 10px 45px rgba(0, 0, 0, 0.35), 0 0 60px rgba(26, 123, 255, 0.2);
       backdrop-filter: blur(6px);
+      border-radius: 16px;
     }
 
     h1 {
@@ -65,6 +67,7 @@
       overflow: hidden;
       box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5), 0 0 60px rgba(26, 123, 255, 0.2);
       background: linear-gradient(135deg, rgba(20, 35, 70, 0.85), rgba(10, 18, 36, 0.85));
+      border-radius: 12px;
     }
 
     #bg {
@@ -116,6 +119,7 @@
       justify-content: center;
       gap: 0.65rem;
       pointer-events: none;
+      padding: 0.5rem;
     }
 
     .info {
@@ -144,8 +148,9 @@
       letter-spacing: 0.5px;
       transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s;
       box-shadow: 0 8px 22px rgba(255, 87, 34, 0.3);
-      border-radius: 6px;
+      border-radius: 10px;
       min-width: 9rem;
+      width: min(18rem, 90vw);
       text-align: center;
     }
 
@@ -163,6 +168,71 @@
     .cta-buttons a.secondary:hover {
       background: linear-gradient(120deg, #81d4fa, #26c6da 40%, #7986cb);
       box-shadow: 0 12px 28px rgba(0, 188, 212, 0.4);
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 1rem;
+        align-items: flex-start;
+      }
+
+      main {
+        padding: 0.85rem 0.85rem 1.45rem;
+        gap: 0.5rem;
+      }
+
+      h1 {
+        letter-spacing: 2px;
+      }
+
+      .canvas-frame {
+        height: 52vh;
+        min-height: 300px;
+      }
+
+      .cta-buttons {
+        gap: 0.55rem;
+      }
+
+      .cta-buttons a {
+        font-size: 1rem;
+        padding: 0.65rem 1.1rem;
+      }
+    }
+
+    @media (max-width: 540px) {
+      body {
+        padding: 0.85rem;
+      }
+
+      main {
+        padding: 0.75rem 0.65rem 1.2rem;
+        border-radius: 14px;
+      }
+
+      h1 {
+        font-size: clamp(2.15rem, 9vw, 3.2rem);
+        letter-spacing: 1.5px;
+      }
+
+      .canvas-frame {
+        height: 48vh;
+        min-height: 260px;
+        border-radius: 10px;
+      }
+
+      .cta-buttons {
+        padding: 0.75rem;
+      }
+
+      .cta-buttons a {
+        width: 100%;
+        max-width: 360px;
+      }
+
+      p {
+        font-size: 0.98rem;
+      }
     }
   </style>
 </head>

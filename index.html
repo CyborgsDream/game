@@ -200,7 +200,7 @@
     camera.position.set(0, 8, 18);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
@@ -282,7 +282,8 @@
       flatShading: true,
     });
 
-    for (let i = 0; i < 36; i++) {
+    const crystalSpin = [];
+    for (let i = 0; i < 30; i++) {
       const geom = new THREE.DodecahedronGeometry(THREE.MathUtils.randFloat(0.35, 1.6), 0);
       const mesh = new THREE.Mesh(geom, crystalMaterial);
       const angle = Math.random() * Math.PI * 2;
@@ -290,12 +291,12 @@
       const y = THREE.MathUtils.randFloat(0.3, 2.8);
       mesh.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
       mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      crystalSpin.push(0.002 + Math.random() * 0.001);
       crystals.add(mesh);
     }
     root.add(crystals);
 
     // Floating shards
-    const shards = new THREE.Group();
     const shardMaterial = new THREE.MeshStandardMaterial({
       color: 0xffc857,
       emissive: 0x753900,
@@ -304,21 +305,38 @@
       metalness: 0.2,
       roughness: 0.4,
     });
+    const shardGeometry = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.35), 0);
+    const shardCount = 140;
+    const shardMesh = new THREE.InstancedMesh(shardGeometry, shardMaterial, shardCount);
+    shardMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    root.add(shardMesh);
 
-    for (let i = 0; i < 120; i++) {
-      const geom = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.35), 0);
-      const mesh = new THREE.Mesh(geom, shardMaterial);
+    const shardStates = [];
+    const shardDummy = new THREE.Object3D();
+    for (let i = 0; i < shardCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const radius = 8 + Math.random() * 20;
-      const height = THREE.MathUtils.randFloat(1.5, 9);
-      mesh.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
-      shards.add(mesh);
+      const radius = 8 + Math.random() * 18;
+      const baseY = THREE.MathUtils.randFloat(1.4, 8.5);
+      shardDummy.position.set(Math.cos(angle) * radius, baseY, Math.sin(angle) * radius);
+      shardDummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      shardDummy.updateMatrix();
+      shardMesh.setMatrixAt(i, shardDummy.matrix);
+      shardStates.push({
+        x: shardDummy.position.x,
+        y: baseY,
+        z: shardDummy.position.z,
+        baseRot: shardDummy.rotation.clone(),
+        floatSpeed: 1.2 + Math.random() * 0.8,
+        floatAmp: THREE.MathUtils.randFloat(0.35, 0.9),
+        spinX: 0.0035 + Math.random() * 0.0012,
+        spinY: 0.0042 + Math.random() * 0.0014,
+        offset: Math.random() * Math.PI * 2,
+      });
     }
-    root.add(shards);
 
     // Star particles
     const starGeom = new THREE.BufferGeometry();
-    const starCount = 400;
+    const starCount = 320;
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
       starPositions[i] = THREE.MathUtils.randFloatSpread(80);
@@ -330,17 +348,26 @@
     const stars = new THREE.Points(starGeom, starMat);
     root.add(stars);
 
-    function sizeRendererToCanvas() {
+    let lastWidth = 0;
+    let lastHeight = 0;
+    let needsResize = true;
+    function sizeRendererToCanvas(force = false) {
+      if (!force && !needsResize) return;
       const { width, height } = canvas.getBoundingClientRect();
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height, false);
+      if (width !== lastWidth || height !== lastHeight || force) {
+        lastWidth = width;
+        lastHeight = height;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+      }
+      needsResize = false;
     }
 
-    function onResize() {
-      sizeRendererToCanvas();
-    }
-    window.addEventListener('resize', onResize);
+    sizeRendererToCanvas(true);
+    window.addEventListener('resize', () => {
+      needsResize = true;
+    });
 
     function animate() {
       requestAnimationFrame(animate);
@@ -355,15 +382,24 @@
 
       terrain.rotation.y = t * 0.0015;
       crystals.children.forEach((c, i) => {
-        c.rotation.y += 0.002 + i * 0.0001;
-        c.position.y += Math.sin(t + i) * 0.0015;
+        const spin = crystalSpin[i];
+        c.rotation.y += spin;
+        c.position.y += Math.sin(t * 0.65 + i) * 0.0012;
       });
 
-      shards.children.forEach((s, i) => {
-        s.rotation.x += 0.004 + i * 0.00001;
-        s.rotation.y += 0.005 + i * 0.000015;
-        s.position.y += Math.sin(t * 1.4 + i) * 0.0012;
-      });
+      for (let i = 0; i < shardCount; i++) {
+        const state = shardStates[i];
+        const y = state.y + Math.sin(t * state.floatSpeed + state.offset) * state.floatAmp;
+        shardDummy.position.set(state.x, y, state.z);
+        shardDummy.rotation.set(
+          state.baseRot.x + t * state.spinX,
+          state.baseRot.y + t * state.spinY,
+          state.baseRot.z
+        );
+        shardDummy.updateMatrix();
+        shardMesh.setMatrixAt(i, shardDummy.matrix);
+      }
+      shardMesh.instanceMatrix.needsUpdate = true;
 
       const flarePulse = (Math.sin(t * 2.0) + 1) * 0.35 + 0.4;
       warmFlare.material.opacity = flarePulse;

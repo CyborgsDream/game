@@ -8,8 +8,8 @@
   <style>
     body {
       margin: 0;
-      padding: 1.25rem;
-      min-height: 100vh;
+      padding: clamp(0.85rem, 3vw, 1.25rem);
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -17,6 +17,7 @@
       background: radial-gradient(circle at 20% 30%, #1c2a52, #0a0f1f 60%),
         radial-gradient(circle at 80% 10%, #243b68, transparent 50%),
         linear-gradient(135deg, #0a1029, #09101d 70%, #04060f);
+      background-color: #04060f;
       color: #fff;
       text-align: center;
       overflow: hidden;
@@ -81,32 +82,103 @@
       inset: 0;
       pointer-events: none;
       mix-blend-mode: screen;
-      opacity: 0.65;
-      filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.6));
+      opacity: 0.78;
+      filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.35));
     }
 
     .vector-overlay svg {
       width: 100%;
       height: 100%;
+      display: block;
     }
 
-    .vector-overlay line,
-    .vector-overlay polyline {
-      stroke: rgba(0, 210, 255, 0.9);
-      stroke-width: 1.4;
+    .grid-layer rect {
+      fill: url(#neon-grid);
+      opacity: 0.55;
+      filter: blur(0.35px);
+      animation: grid-flicker 6.5s ease-in-out infinite;
+    }
+
+    .grid-layer .axis {
+      stroke: rgba(0, 230, 255, 0.75);
+      stroke-width: 0.6;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 6px rgba(0, 200, 255, 0.45));
+      animation: axis-pulse 5.5s ease-in-out infinite;
+    }
+
+    .wired-paths polyline {
+      stroke: rgba(255, 128, 196, 0.9);
+      stroke-width: 0.9;
       stroke-linecap: round;
       stroke-linejoin: round;
-      stroke-dasharray: 10 6;
-      animation: dash 6s linear infinite;
+      fill: none;
+      filter: blur(0.4px) drop-shadow(0 0 10px rgba(255, 128, 196, 0.35));
+      stroke-dasharray: 18 12;
+      animation: wire-glow 7s ease-in-out infinite;
     }
 
-    .vector-overlay polyline {
-      stroke: rgba(255, 80, 140, 0.85);
+    .wired-paths polyline:nth-child(2) {
+      stroke: rgba(130, 210, 255, 0.9);
+      stroke-dasharray: 16 9;
+      animation-duration: 6.4s;
     }
 
-    @keyframes dash {
-      to {
-        stroke-dashoffset: -320;
+    .wired-paths polyline:nth-child(3) {
+      stroke: rgba(0, 255, 205, 0.75);
+      stroke-dasharray: 14 10;
+      animation-duration: 8.2s;
+    }
+
+    @keyframes grid-flicker {
+      0% {
+        opacity: 0.35;
+        filter: blur(0.7px);
+      }
+      30% {
+        opacity: 0.55;
+        filter: blur(0.3px);
+      }
+      55% {
+        opacity: 0.72;
+        filter: blur(0.1px);
+      }
+      100% {
+        opacity: 0.4;
+        filter: blur(0.6px);
+      }
+    }
+
+    @keyframes axis-pulse {
+      0%,
+      100% {
+        opacity: 0.75;
+      }
+      50% {
+        opacity: 0.45;
+        stroke-width: 0.45;
+      }
+    }
+
+    @keyframes wire-glow {
+      0% {
+        opacity: 0.2;
+        stroke-dashoffset: 0;
+        filter: blur(0.7px) drop-shadow(0 0 12px rgba(255, 128, 196, 0.45));
+      }
+      40% {
+        opacity: 0.68;
+        stroke-dashoffset: -22;
+        filter: blur(0.35px) drop-shadow(0 0 14px rgba(255, 128, 196, 0.55));
+      }
+      70% {
+        opacity: 0.5;
+        stroke-dashoffset: -36;
+        filter: blur(0.55px) drop-shadow(0 0 18px rgba(255, 128, 196, 0.35));
+      }
+      100% {
+        opacity: 0.26;
+        stroke-dashoffset: -12;
       }
     }
 
@@ -243,12 +315,21 @@
       <canvas id="bg"></canvas>
       <div class="vector-overlay" aria-hidden="true">
         <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-          <line x1="5" y1="10" x2="95" y2="30"></line>
-          <line x1="10" y1="80" x2="90" y2="65"></line>
-          <line x1="15" y1="20" x2="35" y2="95"></line>
-          <line x1="70" y1="10" x2="55" y2="90"></line>
-          <polyline points="5,60 25,40 45,60 65,42 85,58" fill="none"></polyline>
-          <polyline points="15,15 40,8 68,22 88,12" fill="none"></polyline>
+          <defs>
+            <pattern id="neon-grid" width="8" height="8" patternUnits="userSpaceOnUse">
+              <path d="M0 0 L0 8 M0 0 L8 0" fill="none" stroke="rgba(0, 200, 255, 0.5)" stroke-width="0.3" />
+            </pattern>
+          </defs>
+          <g class="grid-layer">
+            <rect x="0" y="0" width="100" height="100"></rect>
+            <line class="axis" x1="0" y1="50" x2="100" y2="50"></line>
+            <line class="axis" x1="50" y1="0" x2="50" y2="100"></line>
+          </g>
+          <g class="wired-paths">
+            <polyline points="8,72 22,60 38,66 52,52 74,62 88,50"></polyline>
+            <polyline points="12,32 30,22 48,30 62,18 82,26 90,16"></polyline>
+            <polyline points="6,46 18,40 28,48 44,34 58,40 70,30 86,36"></polyline>
+          </g>
         </svg>
       </div>
       <div class="cta-buttons">
@@ -270,7 +351,7 @@
     camera.position.set(0, 8, 18);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
@@ -376,7 +457,7 @@
       roughness: 0.4,
     });
     const shardGeometry = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.35), 0);
-    const shardCount = 140;
+    const shardCount = 120;
     const shardMesh = new THREE.InstancedMesh(shardGeometry, shardMaterial, shardCount);
     shardMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     root.add(shardMesh);
@@ -406,7 +487,7 @@
 
     // Star particles
     const starGeom = new THREE.BufferGeometry();
-    const starCount = 320;
+    const starCount = 240;
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
       starPositions[i] = THREE.MathUtils.randFloatSpread(80);

@@ -28,7 +28,7 @@ debugEl.style.display = 'block';
 const tileSize = 32;
 // Pull the draw distance back a bit to keep the render loop responsive
 // while still showing plenty of terrain ahead.
-const tilesInView = 70;
+const tilesInView = 50;
 // Perspective parameters
 // Increase default FOV for a stronger fish-eye effect
 let fieldOfView = Math.PI / 1.8; // ~100° vertical FOV
@@ -184,7 +184,6 @@ function updateDebugInfo() {
 function isTileVisible(x, y) {
   const centerX = x + 0.5;
   const centerY = y + 0.5;
-  const centerH = computeHeight(centerX, centerY);
   const dx = centerX - camera.x;
   const dy = centerY - camera.y;
   const distSq = dx * dx + dy * dy;
@@ -192,6 +191,7 @@ function isTileVisible(x, y) {
   const dot = dx * cosYaw + dy * sinYaw;
   if (dot <= 0) return false;
   if ((dot * dot) < distSq * cosHalfHFOVSq) return false;
+  const centerH = getHeight(centerX, centerY);
   const proj = project3D(centerX, centerY, centerH);
   if (!proj) return false;
   let [sx, sy] = proj;

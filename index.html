@@ -197,6 +197,51 @@
     terrain.receiveShadow = true;
     root.add(terrain);
 
+    // Crystal monoliths
+    const crystals = new THREE.Group();
+    const crystalMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1c8adb,
+      emissive: 0x133d6a,
+      emissiveIntensity: 0.65,
+      metalness: 0.3,
+      roughness: 0.25,
+      flatShading: true,
+    });
+
+    for (let i = 0; i < 36; i++) {
+      const geom = new THREE.DodecahedronGeometry(THREE.MathUtils.randFloat(0.35, 1.6), 0);
+      const mesh = new THREE.Mesh(geom, crystalMaterial);
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 6 + Math.random() * 18;
+      const y = THREE.MathUtils.randFloat(0.3, 2.8);
+      mesh.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      crystals.add(mesh);
+    }
+    root.add(crystals);
+
+    // Floating shards
+    const shards = new THREE.Group();
+    const shardMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffc857,
+      emissive: 0x753900,
+      emissiveIntensity: 0.5,
+      flatShading: true,
+      metalness: 0.2,
+      roughness: 0.4,
+    });
+
+    for (let i = 0; i < 120; i++) {
+      const geom = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.35), 0);
+      const mesh = new THREE.Mesh(geom, shardMaterial);
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 8 + Math.random() * 20;
+      const height = THREE.MathUtils.randFloat(1.5, 9);
+      mesh.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+      shards.add(mesh);
+    }
+    root.add(shards);
+
     // Star particles
     const starGeom = new THREE.BufferGeometry();
     const starCount = 400;
@@ -235,6 +280,16 @@
       camera.lookAt(0, 2.5 + Math.sin(t * 0.2) * 0.5, 0);
 
       terrain.rotation.y = t * 0.0015;
+      crystals.children.forEach((c, i) => {
+        c.rotation.y += 0.002 + i * 0.0001;
+        c.position.y += Math.sin(t + i) * 0.0015;
+      });
+
+      shards.children.forEach((s, i) => {
+        s.rotation.x += 0.004 + i * 0.00001;
+        s.rotation.y += 0.005 + i * 0.000015;
+        s.position.y += Math.sin(t * 1.4 + i) * 0.0012;
+      });
 
       const flarePulse = (Math.sin(t * 2.0) + 1) * 0.35 + 0.4;
       warmFlare.material.opacity = flarePulse;

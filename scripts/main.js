@@ -26,7 +26,9 @@ debugEl.style.display = 'block';
 
 // --- Engine Parameters ---
 const tileSize = 32;
-const tilesInView = 96; // increase draw distance to avoid tiles popping
+// Pull the draw distance back a bit to keep the render loop responsive
+// while still showing plenty of terrain ahead.
+const tilesInView = 70;
 // Perspective parameters
 // Increase default FOV for a stronger fish-eye effect
 let fieldOfView = Math.PI / 1.8; // ~100° vertical FOV
@@ -255,8 +257,6 @@ function drawTile(ctx, tile) {
   ctx.lineTo(nw[0], nw[1]);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = "#111a";
-  ctx.stroke();
 }
 
 function drawSky(ctx) {

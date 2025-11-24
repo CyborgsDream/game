@@ -14,7 +14,9 @@
       align-items: center;
       justify-content: center;
       font-family: sans-serif;
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      background: radial-gradient(circle at 20% 30%, #1c2a52, #0a0f1f 60%),
+        radial-gradient(circle at 80% 10%, #243b68, transparent 50%),
+        linear-gradient(135deg, #0a1029, #09101d 70%, #04060f);
       color: #fff;
       text-align: center;
       position: relative;
@@ -32,23 +34,35 @@
     main {
       position: relative;
       z-index: 1;
+      padding: 1.5rem 2rem;
+      border-radius: 12px;
+      background: rgba(0, 8, 20, 0.45);
+      box-shadow: 0 10px 45px rgba(0, 0, 0, 0.35), 0 0 60px rgba(26, 123, 255, 0.2);
+      backdrop-filter: blur(6px);
     }
     h1 {
-      font-size: 3rem;
-      margin-bottom: 1rem;
+      font-size: clamp(2.5rem, 4vw, 4rem);
+      letter-spacing: 2px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      text-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 22px rgba(73, 168, 255, 0.65);
     }
+    p { margin-top: 0; margin-bottom: 1.25rem; color: #c8d7ff; }
     a.play-button {
       display: inline-block;
       padding: 0.75rem 1.5rem;
-      background: #ff5722;
+      background: linear-gradient(120deg, #ff9800, #ff5722 40%, #ff3d7f);
       color: #fff;
-      border-radius: 4px;
+      border-radius: 999px;
       text-decoration: none;
       font-size: 1.25rem;
-      transition: background 0.3s;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s;
+      box-shadow: 0 10px 30px rgba(255, 87, 34, 0.35);
     }
     a.play-button:hover {
-      background: #e64a19;
+      background: linear-gradient(120deg, #ffc107, #ff7043 40%, #ff4da6);
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 15px 40px rgba(255, 105, 71, 0.45);
     }
   </style>
 </head>
@@ -61,24 +75,142 @@
   </main>
   <script>
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 5, 12);
+    scene.fog = new THREE.FogExp2(0x050913, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 180);
+    camera.position.set(0, 8, 18);
+
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
-    const group = new THREE.Group();
-    const size = 10;
-    for (let x = -size; x <= size; x += 2) {
-      for (let z = -size; z <= size; z += 2) {
-        const geom = new THREE.BoxGeometry(1.8, 0.2, 1.8);
-        const edges = new THREE.EdgesGeometry(geom);
-        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.5 }));
-        line.position.set(x, 0, z);
-        group.add(line);
-      }
+    const clock = new THREE.Clock();
+    const root = new THREE.Group();
+    scene.add(root);
+
+    // Atmosphere + light
+    const ambient = new THREE.AmbientLight(0x5fb1ff, 0.4);
+    scene.add(ambient);
+
+    const mainLight = new THREE.PointLight(0xffbf7f, 2.8, 120, 1.8);
+    mainLight.position.set(-12, 18, 10);
+    scene.add(mainLight);
+
+    const rimLight = new THREE.PointLight(0x6ac7ff, 1.4, 90, 2);
+    rimLight.position.set(14, 10, -12);
+    scene.add(rimLight);
+
+    function makeFlare(color) {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`);
+      gradient.addColorStop(0.35, `rgba(${color.r}, ${color.g}, ${color.b}, 0.45)`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({ map: texture, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(20, 20, 1);
+      return sprite;
     }
-    scene.add(group);
+
+    const warmFlare = makeFlare({ r: 255, g: 170, b: 100 });
+    warmFlare.position.copy(mainLight.position).multiplyScalar(0.6);
+    scene.add(warmFlare);
+
+    const coolFlare = makeFlare({ r: 120, g: 190, b: 255 });
+    coolFlare.position.copy(rimLight.position).multiplyScalar(0.65);
+    scene.add(coolFlare);
+
+    // Low-poly terrain
+    const terrainGeometry = new THREE.PlaneGeometry(60, 60, 90, 90);
+    const pos = terrainGeometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      const height = Math.sin(x * 0.22) * 1.6 + Math.cos(z * 0.18) * 1.2 + (Math.random() * 0.8 - 0.4);
+      pos.setY(i, height);
+    }
+    pos.needsUpdate = true;
+    terrainGeometry.computeVertexNormals();
+    terrainGeometry.rotateX(-Math.PI / 2);
+
+    const terrainMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0d203f,
+      roughness: 0.95,
+      metalness: 0.05,
+      flatShading: true,
+      emissive: 0x071022,
+      emissiveIntensity: 0.4,
+    });
+    const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
+    terrain.receiveShadow = true;
+    root.add(terrain);
+
+    // Crystal monoliths
+    const crystals = new THREE.Group();
+    const crystalMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1c8adb,
+      emissive: 0x133d6a,
+      emissiveIntensity: 0.65,
+      metalness: 0.3,
+      roughness: 0.25,
+      flatShading: true,
+    });
+
+    for (let i = 0; i < 36; i++) {
+      const geom = new THREE.DodecahedronGeometry(THREE.MathUtils.randFloat(0.35, 1.6), 0);
+      const mesh = new THREE.Mesh(geom, crystalMaterial);
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 6 + Math.random() * 18;
+      const y = THREE.MathUtils.randFloat(0.3, 2.8);
+      mesh.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      crystals.add(mesh);
+    }
+    root.add(crystals);
+
+    // Floating shards
+    const shards = new THREE.Group();
+    const shardMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffc857,
+      emissive: 0x753900,
+      emissiveIntensity: 0.5,
+      flatShading: true,
+      metalness: 0.2,
+      roughness: 0.4,
+    });
+
+    for (let i = 0; i < 120; i++) {
+      const geom = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.35), 0);
+      const mesh = new THREE.Mesh(geom, shardMaterial);
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 8 + Math.random() * 20;
+      const height = THREE.MathUtils.randFloat(1.5, 9);
+      mesh.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+      shards.add(mesh);
+    }
+    root.add(shards);
+
+    // Star particles
+    const starGeom = new THREE.BufferGeometry();
+    const starCount = 400;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i += 3) {
+      starPositions[i] = THREE.MathUtils.randFloatSpread(80);
+      starPositions[i + 1] = THREE.MathUtils.randFloat(10, 40);
+      starPositions[i + 2] = THREE.MathUtils.randFloatSpread(80);
+    }
+    starGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xcfe3ff, size: 0.2, transparent: true, opacity: 0.9, depthWrite: false });
+    const stars = new THREE.Points(starGeom, starMat);
+    root.add(stars);
 
     function onResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -87,12 +219,33 @@
     }
     window.addEventListener('resize', onResize);
 
-    function animate(time) {
+    function animate() {
       requestAnimationFrame(animate);
-      group.rotation.y = time * 0.0002;
-      group.children.forEach((c, i) => {
-        c.position.y = 0.4 * Math.sin(time * 0.001 + i);
+      const t = clock.getElapsedTime();
+
+      camera.position.x = Math.sin(t * 0.15) * 16;
+      camera.position.z = Math.cos(t * 0.12) * 18;
+      camera.position.y = 6 + Math.sin(t * 0.35) * 1.8;
+      camera.lookAt(0, 2.5 + Math.sin(t * 0.2) * 0.5, 0);
+
+      terrain.rotation.y = t * 0.0015;
+      crystals.children.forEach((c, i) => {
+        c.rotation.y += 0.002 + i * 0.0001;
+        c.position.y += Math.sin(t + i) * 0.0015;
       });
+
+      shards.children.forEach((s, i) => {
+        s.rotation.x += 0.004 + i * 0.00001;
+        s.rotation.y += 0.005 + i * 0.000015;
+        s.position.y += Math.sin(t * 1.4 + i) * 0.0012;
+      });
+
+      const flarePulse = (Math.sin(t * 2.0) + 1) * 0.35 + 0.4;
+      warmFlare.material.opacity = flarePulse;
+      coolFlare.material.opacity = 0.3 + Math.sin(t * 1.3 + 1) * 0.25;
+
+      stars.rotation.y += 0.0005;
+
       renderer.render(scene, camera);
     }
     animate();

@@ -8,7 +8,7 @@
   <style>
     body {
       margin: 0;
-      padding: 0;
+      padding: 2.5rem 1.5rem;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -19,35 +19,60 @@
         linear-gradient(135deg, #0a1029, #09101d 70%, #04060f);
       color: #fff;
       text-align: center;
-      position: relative;
       overflow: hidden;
+      box-sizing: border-box;
     }
-    #bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      filter: blur(2px);
-    }
+
     main {
-      position: relative;
-      z-index: 1;
-      padding: 1.5rem 2rem;
-      border-radius: 12px;
-      background: rgba(0, 8, 20, 0.45);
+      width: min(1400px, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.4rem;
+      padding: 1.5rem;
+      border-radius: 14px;
+      background: rgba(0, 8, 20, 0.5);
       box-shadow: 0 10px 45px rgba(0, 0, 0, 0.35), 0 0 60px rgba(26, 123, 255, 0.2);
       backdrop-filter: blur(6px);
     }
+
     h1 {
       font-size: clamp(2.5rem, 4vw, 4rem);
       letter-spacing: 2px;
-      margin-bottom: 0.75rem;
+      margin: 0;
       text-transform: uppercase;
       text-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 22px rgba(73, 168, 255, 0.65);
     }
-    p { margin-top: 0; margin-bottom: 1.25rem; color: #c8d7ff; }
+
+    .canvas-frame {
+      width: 100%;
+      height: 50vh;
+      min-height: 320px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5), 0 0 60px rgba(26, 123, 255, 0.2);
+      background: linear-gradient(135deg, rgba(20, 35, 70, 0.8), rgba(10, 18, 36, 0.8));
+    }
+
+    #bg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      max-width: 760px;
+    }
+
+    p {
+      margin: 0;
+      color: #c8d7ff;
+    }
+
     a.play-button {
       display: inline-block;
       padding: 0.75rem 1.5rem;
@@ -59,6 +84,7 @@
       transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s;
       box-shadow: 0 10px 30px rgba(255, 87, 34, 0.35);
     }
+
     a.play-button:hover {
       background: linear-gradient(120deg, #ffc107, #ff7043 40%, #ff4da6);
       transform: translateY(-2px) scale(1.02);
@@ -67,21 +93,25 @@
   </style>
 </head>
 <body>
-  <canvas id="bg"></canvas>
   <main>
     <h1>Welcome to the Game</h1>
-    <p>Prepare yourself for an immersive 3D experience.</p>
-    <a class="play-button" href="game.html">Play Now</a>
+    <div class="canvas-frame">
+      <canvas id="bg"></canvas>
+    </div>
+    <div class="info">
+      <p>Prepare yourself for an immersive 3D experience.</p>
+      <a class="play-button" href="game.html">Play Now</a>
+    </div>
   </main>
   <script>
+    const canvas = document.getElementById('bg');
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x050913, 0.035);
 
-    const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 180);
+    const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 180);
     camera.position.set(0, 8, 18);
 
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -212,16 +242,23 @@
     const stars = new THREE.Points(starGeom, starMat);
     root.add(stars);
 
-    function onResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
+    function sizeRendererToCanvas() {
+      const { width, height } = canvas.getBoundingClientRect();
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(width, height, false);
+    }
+
+    function onResize() {
+      sizeRendererToCanvas();
     }
     window.addEventListener('resize', onResize);
 
     function animate() {
       requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
+
+      sizeRendererToCanvas();
 
       camera.position.x = Math.sin(t * 0.15) * 16;
       camera.position.z = Math.cos(t * 0.12) * 18;

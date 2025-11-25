@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arena Mode - Neon Game Hub</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 12% 10%, rgba(0, 200, 255, 0.1), transparent 32%),
+        radial-gradient(circle at 80% 12%, rgba(255, 99, 146, 0.1), transparent 40%),
+        linear-gradient(135deg, #05080f, #0a0f1f 60%, #03060c);
+      color: #dfe8ff;
+      overflow: hidden;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      background: linear-gradient(180deg, rgba(0, 8, 18, 0.8), rgba(0, 8, 18, 0.35));
+      border-bottom: 1px solid rgba(0, 200, 255, 0.25);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.16rem;
+      text-transform: uppercase;
+    }
+
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.8rem;
+      background: rgba(0, 12, 24, 0.65);
+      border: 1px solid rgba(0, 200, 255, 0.35);
+      color: #dfe8ff;
+      text-decoration: none;
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .link-btn:hover,
+    .link-btn:focus-visible {
+      color: #fff;
+      border-color: rgba(0, 200, 255, 0.7);
+      transform: translateY(-1px);
+    }
+
+    main {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #arenaCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #050910;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1rem;
+      pointer-events: none;
+    }
+
+    .hud-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.85rem;
+      max-width: 900px;
+    }
+
+    .hud-card {
+      background: rgba(0, 10, 22, 0.7);
+      border: 1px solid rgba(0, 200, 255, 0.3);
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+    }
+
+    .eyebrow {
+      margin: 0;
+      font-size: 0.75rem;
+      letter-spacing: 0.24rem;
+      text-transform: uppercase;
+      color: rgba(140, 198, 255, 0.85);
+    }
+
+    h2 {
+      margin: 0.25rem 0 0;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      letter-spacing: 0.08em;
+    }
+
+    .metrics {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    .metric {
+      display: grid;
+      gap: 0.2rem;
+      min-width: 140px;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      letter-spacing: 0.12rem;
+      text-transform: uppercase;
+      color: rgba(180, 210, 255, 0.8);
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1rem;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .metrics {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Arena Mode</h1>
+    <nav>
+      <a class="link-btn" href="index.html">&#8592; Back to hub</a>
+    </nav>
+  </header>
+  <main>
+    <canvas id="arenaCanvas"></canvas>
+    <div class="hud">
+      <div class="hud-grid">
+        <div class="hud-card">
+          <p class="eyebrow">Arena Mode</p>
+          <h2>Low-Poly City Explorer</h2>
+          <p>Drive the scout rig with WASD. The camera trails the vehicle for a clean cinematic sweep.</p>
+        </div>
+        <div class="hud-card">
+          <div class="metrics">
+            <div class="metric">
+              <span class="metric-label">Speed</span>
+              <span class="metric-value" data-arena-speed>0</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Heading</span>
+              <span class="metric-value" data-arena-heading>0°</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const canvas = document.getElementById('arenaCanvas');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x0a111f, 18, 160);
+
+    const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 400);
+    camera.position.set(0, 8, 18);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+    const clock = new THREE.Clock();
+
+    const ambient = new THREE.AmbientLight(0x6fa6ff, 0.35);
+    scene.add(ambient);
+
+    const keyLight = new THREE.DirectionalLight(0x9ad8ff, 1.1);
+    keyLight.position.set(-22, 28, 12);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0xff7a9e, 0.55);
+    rimLight.position.set(22, 16, -12);
+    scene.add(rimLight);
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(320, 320, 1, 1),
+      new THREE.MeshStandardMaterial({ color: 0x0a1222, roughness: 1, metalness: 0, side: THREE.DoubleSide })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x0b0f16, roughness: 0.85, metalness: 0.05 });
+    const roadWidth = 6;
+    const roadLength = 260;
+    const roadGeoH = new THREE.BoxGeometry(roadLength, 0.08, roadWidth);
+    const roadGeoV = new THREE.BoxGeometry(roadWidth, 0.08, roadLength);
+    for (let i = -4; i <= 4; i++) {
+      const roadH = new THREE.Mesh(roadGeoH, roadMaterial);
+      roadH.position.z = i * 16;
+      scene.add(roadH);
+
+      const roadV = new THREE.Mesh(roadGeoV, roadMaterial);
+      roadV.position.x = i * 16;
+      scene.add(roadV);
+    }
+
+    const dividerMat = new THREE.LineBasicMaterial({ color: 0x1b2b44, transparent: true, opacity: 0.6 });
+    const dividerGeo = new THREE.BufferGeometry();
+    const dividerVerts = [];
+    for (let i = -roadLength / 2; i <= roadLength / 2; i += 5) {
+      dividerVerts.push(-roadLength / 2, 0.06, i, roadLength / 2, 0.06, i);
+      dividerVerts.push(i, 0.06, -roadLength / 2, i, 0.06, roadLength / 2);
+    }
+    dividerGeo.setAttribute('position', new THREE.Float32BufferAttribute(dividerVerts, 3));
+    const dividerLines = new THREE.LineSegments(dividerGeo, dividerMat);
+    scene.add(dividerLines);
+
+    const buildingGroup = new THREE.Group();
+    scene.add(buildingGroup);
+    const palette = [0x1c2f4a, 0x243a63, 0x2f4b7a, 0x234061, 0x1b2d43];
+
+    function addBuilding(x, z) {
+      const w = 3.8 + Math.random() * 3.6;
+      const d = 3.8 + Math.random() * 3.6;
+      const h = 3 + Math.random() * 12;
+      const geometry = new THREE.BoxGeometry(w, h, d);
+      const color = palette[Math.floor(Math.random() * palette.length)];
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        emissive: 0x0b1a2c,
+        emissiveIntensity: 0.25 + Math.random() * 0.18,
+        metalness: 0.22,
+        roughness: 0.6,
+        flatShading: true,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, h / 2, z);
+      buildingGroup.add(mesh);
+
+      if (Math.random() > 0.65) {
+        const antenna = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.1, 0.15, h * 0.2, 5),
+          new THREE.MeshStandardMaterial({ color: 0x5cf0ff, emissive: 0x5cf0ff, emissiveIntensity: 0.55, roughness: 0.2 })
+        );
+        antenna.position.set(0, h / 2 + h * 0.1, 0);
+        mesh.add(antenna);
+      }
+    }
+
+    const gridSize = 5;
+    const spacing = 16;
+    for (let gx = -gridSize; gx <= gridSize; gx++) {
+      for (let gz = -gridSize; gz <= gridSize; gz++) {
+        if (Math.abs(gx) % 2 === 0 || Math.abs(gz) % 2 === 0) continue;
+        const jitterX = (Math.random() - 0.5) * 2.5;
+        const jitterZ = (Math.random() - 0.5) * 2.5;
+        addBuilding(gx * spacing + jitterX, gz * spacing + jitterZ);
+      }
+    }
+
+    const plazaGeometry = new THREE.CircleGeometry(9, 28);
+    const plaza = new THREE.Mesh(
+      plazaGeometry,
+      new THREE.MeshStandardMaterial({ color: 0x0f1c2e, emissive: 0x0c1a2b, roughness: 0.75 })
+    );
+    plaza.rotation.x = -Math.PI / 2;
+    plaza.position.set(0, 0.02, 0);
+    scene.add(plaza);
+
+    const plazaGlow = new THREE.PointLight(0x3fc3ff, 1.3, 22, 2.5);
+    plazaGlow.position.set(0, 2.2, 0);
+    scene.add(plazaGlow);
+
+    const explorer = new THREE.Group();
+    const hull = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 0.6, 2.2),
+      new THREE.MeshStandardMaterial({
+        color: 0x1bb4ff,
+        emissive: 0x0c2847,
+        emissiveIntensity: 0.7,
+        metalness: 0.45,
+        roughness: 0.35,
+        flatShading: true,
+      })
+    );
+    explorer.add(hull);
+
+    const cockpit = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 0.35, 0.9),
+      new THREE.MeshStandardMaterial({ color: 0x8fd7ff, emissive: 0x5cc8ff, emissiveIntensity: 0.4, roughness: 0.15 })
+    );
+    cockpit.position.set(0, 0.25, 0.15);
+    explorer.add(cockpit);
+
+    const beacon = new THREE.PointLight(0x4ce0ff, 1.4, 14, 2);
+    beacon.position.set(0, 0.8, 0);
+    explorer.add(beacon);
+
+    explorer.position.set(0, 0.35, 0);
+    scene.add(explorer);
+
+    let explorerHeading = Math.PI;
+    let explorerVelocity = 0;
+    const keys = {};
+    const speedEl = document.querySelector('[data-arena-speed]');
+    const headingEl = document.querySelector('[data-arena-heading]');
+
+    document.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    function resizeArena(force = false) {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight || window.innerHeight;
+      if (!width || !height) return;
+      if (!force && renderer.getSize(new THREE.Vector2()).equals(new THREE.Vector2(width, height))) return;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height, false);
+    }
+
+    function updateExplorer(delta) {
+      const turnRate = 1.6;
+      const accel = 11;
+      const brake = 8;
+      if (keys['KeyA']) explorerHeading += turnRate * delta;
+      if (keys['KeyD']) explorerHeading -= turnRate * delta;
+      if (keys['KeyW']) explorerVelocity += accel * delta;
+      if (keys['KeyS']) explorerVelocity -= brake * delta;
+
+      explorerVelocity = THREE.MathUtils.clamp(explorerVelocity, -5, 18);
+      explorerVelocity *= 1 - Math.min(1, delta * 1.25);
+
+      const move = explorerVelocity * delta;
+      explorer.position.x += Math.sin(explorerHeading) * move;
+      explorer.position.z += Math.cos(explorerHeading) * move;
+      explorer.position.y = 0.35 + Math.sin(performance.now() * 0.003) * 0.05;
+      explorer.rotation.y = explorerHeading;
+
+      const speedKph = Math.abs(explorerVelocity * 3.2);
+      if (speedEl) speedEl.textContent = speedKph.toFixed(1);
+      if (headingEl) {
+        const headingDeg = Math.round((explorerHeading % (Math.PI * 2)) * 180 / Math.PI + 360) % 360;
+        headingEl.textContent = `${headingDeg}°`;
+      }
+    }
+
+    const followOffset = new THREE.Vector3();
+    function updateCamera(delta) {
+      const followDistance = 11;
+      const followHeight = 6;
+      followOffset.set(
+        Math.sin(explorerHeading) * -followDistance,
+        followHeight,
+        Math.cos(explorerHeading) * -followDistance
+      );
+      const targetPos = explorer.position.clone().add(followOffset);
+      camera.position.lerp(targetPos, 1 - Math.exp(-delta * 2.5));
+      const lookTarget = explorer.position.clone().add(new THREE.Vector3(0, 2, 0));
+      camera.lookAt(lookTarget);
+    }
+
+    resizeArena(true);
+    window.addEventListener('resize', () => resizeArena(true));
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      updateExplorer(delta);
+      updateCamera(delta);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

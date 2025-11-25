@@ -201,7 +201,7 @@
   <script>
     const canvas = document.getElementById('arenaCanvas');
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x0a111f, 18, 200);
+    scene.fog = new THREE.Fog(0x0e1420, 18, 220);
 
     const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 400);
     camera.position.set(0, 8, 18);
@@ -213,34 +213,34 @@
 
     const clock = new THREE.Clock();
 
-    const ambient = new THREE.AmbientLight(0x6fa6ff, 0.35);
+    const ambient = new THREE.AmbientLight(0x7fa8ff, 0.32);
     scene.add(ambient);
 
-    const keyLight = new THREE.DirectionalLight(0x9ad8ff, 1.1);
+    const keyLight = new THREE.DirectionalLight(0xc2d9ff, 1.05);
     keyLight.position.set(-22, 28, 12);
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff7a9e, 0.55);
+    const rimLight = new THREE.DirectionalLight(0xff9cae, 0.55);
     rimLight.position.set(22, 16, -12);
     scene.add(rimLight);
 
     const metersPerUnit = 1; // Enforce 1 unit = 1 real-world meter for city scale
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(400 * metersPerUnit, 400 * metersPerUnit, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 0x0a1222, roughness: 1, metalness: 0, side: THREE.DoubleSide })
+      new THREE.PlaneGeometry(420 * metersPerUnit, 420 * metersPerUnit, 1, 1),
+      new THREE.MeshStandardMaterial({ color: 0x111822, roughness: 0.98, metalness: 0, side: THREE.DoubleSide })
     );
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
 
-    const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x0b0f16, roughness: 0.85, metalness: 0.05 });
-    const laneMarkMaterial = new THREE.MeshStandardMaterial({ color: 0xcdd7e6, emissive: 0x1e2635, emissiveIntensity: 0.15 });
+    const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1f2a, roughness: 0.9, metalness: 0.08 });
+    const laneMarkMaterial = new THREE.MeshStandardMaterial({ color: 0xd6dce5, emissive: 0x232c3c, emissiveIntensity: 0.12 });
     const roadGroup = new THREE.Group();
     scene.add(roadGroup);
 
     const roadWidth = 10 * metersPerUnit; // 10 m two-lane road
     const tileSize = 20 * metersPerUnit; // modular tile from the provided road reference art
-    const blockSpacing = 48 * metersPerUnit;
+    const blockSpacing = 64 * metersPerUnit;
     const gridHalf = 2; // creates 5 x 5 intersections (4 x 4 blocks)
 
     function addStraightRoad(length, width, x, z, rotation = 0) {
@@ -298,7 +298,7 @@
     const buildingGroup = new THREE.Group();
     scene.add(buildingGroup);
     const buildingColliders = [];
-    const palette = [0xc4b48b, 0xb19b74, 0xa2865f, 0x9a7e59];
+    const palette = [0xd1cdc4, 0xb2aca2, 0x8f8578, 0x6f675c];
 
     function createArtDecoBuilding(width, depth, height) {
       const building = new THREE.Group();
@@ -371,13 +371,19 @@
       for (let gz = -gridHalf; gz < gridHalf; gz++) {
         const centerX = gx * blockSpacing + blockSpacing / 2;
         const centerZ = gz * blockSpacing + blockSpacing / 2;
-        const lotSpacing = 14;
+        const lotSpacing = 18;
+        const gapChance = 0.5;
         for (let lx = -1; lx <= 1; lx++) {
           for (let lz = -1; lz <= 1; lz++) {
-            if (lx === 0 && lz === 0 && Math.random() > 0.35) continue;
-            const jitterX = (Math.random() - 0.5) * 4;
-            const jitterZ = (Math.random() - 0.5) * 4;
-            addBuilding(centerX + lx * lotSpacing + jitterX, centerZ + lz * lotSpacing + jitterZ);
+            const isCorner = Math.abs(lx) + Math.abs(lz) === 2;
+            if (Math.random() < gapChance || isCorner) continue;
+            const jitterX = (Math.random() - 0.5) * 6;
+            const jitterZ = (Math.random() - 0.5) * 6;
+            const offsetX = lx * lotSpacing + jitterX;
+            const offsetZ = lz * lotSpacing + jitterZ;
+            const setbackMargin = (blockSpacing / 2) - Math.max(Math.abs(offsetX), Math.abs(offsetZ));
+            if (setbackMargin < 10) continue;
+            addBuilding(centerX + offsetX, centerZ + offsetZ);
           }
         }
       }

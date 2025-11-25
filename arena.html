@@ -201,7 +201,7 @@
   <script>
     const canvas = document.getElementById('arenaCanvas');
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x0a111f, 18, 160);
+    scene.fog = new THREE.Fog(0x0a111f, 18, 200);
 
     const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 400);
     camera.position.set(0, 8, 18);
@@ -224,83 +224,161 @@
     rimLight.position.set(22, 16, -12);
     scene.add(rimLight);
 
+    const metersPerUnit = 1; // Enforce 1 unit = 1 real-world meter for city scale
+
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(320, 320, 1, 1),
+      new THREE.PlaneGeometry(400 * metersPerUnit, 400 * metersPerUnit, 1, 1),
       new THREE.MeshStandardMaterial({ color: 0x0a1222, roughness: 1, metalness: 0, side: THREE.DoubleSide })
     );
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
 
     const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x0b0f16, roughness: 0.85, metalness: 0.05 });
-    const roadWidth = 6;
-    const roadLength = 260;
-    const roadGeoH = new THREE.BoxGeometry(roadLength, 0.08, roadWidth);
-    const roadGeoV = new THREE.BoxGeometry(roadWidth, 0.08, roadLength);
-    for (let i = -4; i <= 4; i++) {
-      const roadH = new THREE.Mesh(roadGeoH, roadMaterial);
-      roadH.position.z = i * 16;
-      scene.add(roadH);
+    const laneMarkMaterial = new THREE.MeshStandardMaterial({ color: 0xcdd7e6, emissive: 0x1e2635, emissiveIntensity: 0.15 });
+    const roadGroup = new THREE.Group();
+    scene.add(roadGroup);
 
-      const roadV = new THREE.Mesh(roadGeoV, roadMaterial);
-      roadV.position.x = i * 16;
-      scene.add(roadV);
+    const roadWidth = 10 * metersPerUnit; // 10 m two-lane road
+    const tileSize = 20 * metersPerUnit; // modular tile from the provided road reference art
+    const blockSpacing = 48 * metersPerUnit;
+    const gridHalf = 2; // creates 5 x 5 intersections (4 x 4 blocks)
+
+    function addStraightRoad(length, width, x, z, rotation = 0) {
+      const road = new THREE.Mesh(new THREE.BoxGeometry(length, 0.08, width), roadMaterial);
+      road.position.set(x, 0.02, z);
+      road.rotation.y = rotation;
+      roadGroup.add(road);
+
+      const stripes = new THREE.Group();
+      const stripeGeo = new THREE.BoxGeometry(2, 0.1, 0.25);
+      const stripeCount = Math.floor(length / 4);
+      for (let i = -stripeCount / 2; i < stripeCount / 2; i++) {
+        const stripe = new THREE.Mesh(stripeGeo, laneMarkMaterial);
+        stripe.position.set((i + 0.5) * 4, 0.06, 0);
+        stripes.add(stripe);
+      }
+      stripes.position.set(x, 0.01, z);
+      stripes.rotation.y = rotation;
+      roadGroup.add(stripes);
     }
 
-    const dividerMat = new THREE.LineBasicMaterial({ color: 0x1b2b44, transparent: true, opacity: 0.6 });
-    const dividerGeo = new THREE.BufferGeometry();
-    const dividerVerts = [];
-    for (let i = -roadLength / 2; i <= roadLength / 2; i += 5) {
-      dividerVerts.push(-roadLength / 2, 0.06, i, roadLength / 2, 0.06, i);
-      dividerVerts.push(i, 0.06, -roadLength / 2, i, 0.06, roadLength / 2);
+    function addIntersection(x, z) {
+      const junction = new THREE.Mesh(new THREE.BoxGeometry(tileSize, 0.08, tileSize), roadMaterial);
+      junction.position.set(x, 0.02, z);
+      roadGroup.add(junction);
+
+      const crosswalkGeo = new THREE.BoxGeometry(0.5, 0.1, 6);
+      const offsets = [-(tileSize / 2 - 3), tileSize / 2 - 3];
+      offsets.forEach((off) => {
+        const cw1 = new THREE.Mesh(crosswalkGeo, laneMarkMaterial);
+        cw1.position.set(off, 0.07, 0);
+        junction.add(cw1);
+        const cw2 = cw1.clone();
+        cw2.rotation.y = Math.PI / 2;
+        cw2.position.set(0, 0.07, off);
+        junction.add(cw2);
+      });
     }
-    dividerGeo.setAttribute('position', new THREE.Float32BufferAttribute(dividerVerts, 3));
-    const dividerLines = new THREE.LineSegments(dividerGeo, dividerMat);
-    scene.add(dividerLines);
+
+    for (let gx = -gridHalf; gx <= gridHalf; gx++) {
+      for (let gz = -gridHalf; gz <= gridHalf; gz++) {
+        const ix = gx * blockSpacing;
+        const iz = gz * blockSpacing;
+        addIntersection(ix, iz);
+
+        if (gx < gridHalf) {
+          addStraightRoad(blockSpacing, roadWidth, ix + blockSpacing / 2, iz);
+        }
+        if (gz < gridHalf) {
+          addStraightRoad(blockSpacing, roadWidth, ix, iz + blockSpacing / 2, Math.PI / 2);
+        }
+      }
+    }
 
     const buildingGroup = new THREE.Group();
     scene.add(buildingGroup);
-    const palette = [0x1c2f4a, 0x243a63, 0x2f4b7a, 0x234061, 0x1b2d43];
+    const buildingColliders = [];
+    const palette = [0xc4b48b, 0xb19b74, 0xa2865f, 0x9a7e59];
+
+    function createArtDecoBuilding(width, depth, height) {
+      const building = new THREE.Group();
+      const baseH = height * 0.18;
+      const midH = height * 0.58;
+      const capH = height * 0.24;
+
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(width, baseH, depth),
+        new THREE.MeshStandardMaterial({ color: palette[0], roughness: 0.65, metalness: 0.08, emissive: 0x151515, emissiveIntensity: 0.15 })
+      );
+      base.position.y = baseH / 2;
+      building.add(base);
+
+      const mid = new THREE.Mesh(
+        new THREE.BoxGeometry(width * 0.92, midH, depth * 0.92),
+        new THREE.MeshStandardMaterial({ color: palette[1], roughness: 0.55, metalness: 0.12, emissive: 0x171717, emissiveIntensity: 0.18 })
+      );
+      mid.position.y = baseH + midH / 2;
+      building.add(mid);
+
+      const cap = new THREE.Mesh(
+        new THREE.BoxGeometry(width * 0.8, capH, depth * 0.8),
+        new THREE.MeshStandardMaterial({ color: palette[2], roughness: 0.45, metalness: 0.1, emissive: 0x1c1c1c, emissiveIntensity: 0.2 })
+      );
+      cap.position.y = baseH + midH + capH / 2;
+      building.add(cap);
+
+      const facadeLineGeo = new THREE.BoxGeometry(width * 0.02, midH * 0.9, 0.12);
+      const facadeMat = new THREE.MeshStandardMaterial({ color: palette[3], emissive: 0x2a2a2a, emissiveIntensity: 0.18 });
+      const columns = 6;
+      for (let i = 0; i < columns; i++) {
+        const offset = ((i / (columns - 1)) - 0.5) * (width * 0.8);
+        const stripFront = new THREE.Mesh(facadeLineGeo, facadeMat);
+        stripFront.position.set(offset, baseH + midH / 2, depth * 0.46);
+        building.add(stripFront);
+        const stripBack = stripFront.clone();
+        stripBack.position.z = -depth * 0.46;
+        building.add(stripBack);
+      }
+
+      const roofLight = new THREE.PointLight(0xecd7a3, 0.6, height * 2.4, 2);
+      roofLight.position.set(0, baseH + midH + capH + 1, 0);
+      building.add(roofLight);
+
+      return building;
+    }
 
     function addBuilding(x, z) {
-      const w = 3.8 + Math.random() * 3.6;
-      const d = 3.8 + Math.random() * 3.6;
-      const h = 3 + Math.random() * 12;
-      const geometry = new THREE.BoxGeometry(w, h, d);
-      const color = palette[Math.floor(Math.random() * palette.length)];
-      const material = new THREE.MeshStandardMaterial({
-        color,
-        emissive: 0x0b1a2c,
-        emissiveIntensity: 0.25 + Math.random() * 0.18,
-        metalness: 0.22,
-        roughness: 0.6,
-        flatShading: true,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(x, h / 2, z);
-      buildingGroup.add(mesh);
+      const w = 12 + Math.random() * 8;
+      const d = 10 + Math.random() * 6;
+      const h = 12 + Math.random() * 12;
+      const decoBuilding = createArtDecoBuilding(w, d, h);
+      decoBuilding.position.set(x, 0, z);
+      buildingGroup.add(decoBuilding);
 
-      if (Math.random() > 0.65) {
-        const antenna = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.1, 0.15, h * 0.2, 5),
-          new THREE.MeshStandardMaterial({ color: 0x5cf0ff, emissive: 0x5cf0ff, emissiveIntensity: 0.55, roughness: 0.2 })
-        );
-        antenna.position.set(0, h / 2 + h * 0.1, 0);
-        mesh.add(antenna);
+      const collider = new THREE.Box3().setFromCenterAndSize(
+        new THREE.Vector3(x, h / 2, z),
+        new THREE.Vector3(w, h, d)
+      );
+      buildingColliders.push(collider);
+    }
+
+    for (let gx = -gridHalf; gx < gridHalf; gx++) {
+      for (let gz = -gridHalf; gz < gridHalf; gz++) {
+        const centerX = gx * blockSpacing + blockSpacing / 2;
+        const centerZ = gz * blockSpacing + blockSpacing / 2;
+        const lotSpacing = 14;
+        for (let lx = -1; lx <= 1; lx++) {
+          for (let lz = -1; lz <= 1; lz++) {
+            if (lx === 0 && lz === 0 && Math.random() > 0.35) continue;
+            const jitterX = (Math.random() - 0.5) * 4;
+            const jitterZ = (Math.random() - 0.5) * 4;
+            addBuilding(centerX + lx * lotSpacing + jitterX, centerZ + lz * lotSpacing + jitterZ);
+          }
+        }
       }
     }
 
-    const gridSize = 5;
-    const spacing = 16;
-    for (let gx = -gridSize; gx <= gridSize; gx++) {
-      for (let gz = -gridSize; gz <= gridSize; gz++) {
-        if (Math.abs(gx) % 2 === 0 || Math.abs(gz) % 2 === 0) continue;
-        const jitterX = (Math.random() - 0.5) * 2.5;
-        const jitterZ = (Math.random() - 0.5) * 2.5;
-        addBuilding(gx * spacing + jitterX, gz * spacing + jitterZ);
-      }
-    }
-
-    const plazaGeometry = new THREE.CircleGeometry(9, 28);
+    const plazaGeometry = new THREE.CircleGeometry(10, 30);
     const plaza = new THREE.Mesh(
       plazaGeometry,
       new THREE.MeshStandardMaterial({ color: 0x0f1c2e, emissive: 0x0c1a2b, roughness: 0.75 })
@@ -309,7 +387,7 @@
     plaza.position.set(0, 0.02, 0);
     scene.add(plaza);
 
-    const plazaGlow = new THREE.PointLight(0x3fc3ff, 1.3, 22, 2.5);
+    const plazaGlow = new THREE.PointLight(0x3fc3ff, 1.3, 26, 2.5);
     plazaGlow.position.set(0, 2.2, 0);
     scene.add(plazaGlow);
 
@@ -378,8 +456,21 @@
       explorerVelocity *= 1 - Math.min(1, delta * 1.25);
 
       const move = explorerVelocity * delta;
-      explorer.position.x += Math.sin(explorerHeading) * move;
-      explorer.position.z += Math.cos(explorerHeading) * move;
+      const proposedX = explorer.position.x + Math.sin(explorerHeading) * move;
+      const proposedZ = explorer.position.z + Math.cos(explorerHeading) * move;
+      const vehicleBox = new THREE.Box3().setFromCenterAndSize(
+        new THREE.Vector3(proposedX, explorer.position.y, proposedZ),
+        new THREE.Vector3(1.8, 1, 3)
+      );
+
+      const hitBuilding = buildingColliders.some((col) => col.intersectsBox(vehicleBox));
+      if (!hitBuilding) {
+        explorer.position.x = proposedX;
+        explorer.position.z = proposedZ;
+      } else {
+        explorerVelocity = 0;
+      }
+
       explorer.position.y = 0.35 + Math.sin(performance.now() * 0.003) * 0.05;
       explorer.rotation.y = explorerHeading;
 

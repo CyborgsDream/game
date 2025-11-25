@@ -273,85 +273,11 @@
       box-shadow: 0 12px 28px rgba(0, 188, 212, 0.4);
     }
 
-    .arena-section {
-      position: relative;
-      width: 100vw;
-      min-height: 80vh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: radial-gradient(circle at 10% 10%, rgba(0, 200, 255, 0.1), transparent 40%),
-        radial-gradient(circle at 85% 20%, rgba(255, 99, 146, 0.1), transparent 32%),
-        linear-gradient(135deg, #05080f, #0a0f1f 60%, #03060c);
-    }
-
-    #arenaCanvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      background: #050910;
-    }
-
-    .arena-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      padding: 1.25rem 1.5rem;
-      gap: 1rem;
-      pointer-events: none;
-    }
-
-    .arena-copy {
-      max-width: 520px;
-      text-align: left;
-    }
-
-    .arena-sub {
-      margin-top: 0.15rem;
-      color: #cddcf9;
-    }
-
-    .eyebrow {
-      font-size: 0.82rem;
-      letter-spacing: 0.28rem;
-      text-transform: uppercase;
-      color: rgba(140, 198, 255, 0.9);
-      margin: 0 0 0.2rem;
-    }
-
     h2 {
       margin: 0;
       font-size: clamp(2rem, 3.8vw, 3rem);
       letter-spacing: 0.08em;
       text-shadow: 0 0 16px rgba(76, 168, 255, 0.35);
-    }
-
-    .arena-hud {
-      display: inline-flex;
-      gap: 1rem;
-      padding: 0.75rem 1rem;
-      background: rgba(0, 8, 18, 0.65);
-      border: 1px solid rgba(0, 200, 255, 0.35);
-      border-radius: 10px;
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
-      pointer-events: none;
-    }
-
-    .hud-label {
-      display: block;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: rgba(200, 220, 255, 0.8);
-    }
-
-    .hud-value {
-      display: block;
-      font-weight: 700;
-      font-size: 1.3rem;
-      letter-spacing: 0.08em;
     }
 
     @media (max-width: 980px) {
@@ -388,15 +314,6 @@
         padding: 0.65rem 1.1rem;
       }
 
-      .arena-overlay {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 1rem;
-      }
-
-      .arena-hud {
-        width: auto;
-      }
     }
 
     @media (max-width: 540px) {
@@ -423,15 +340,6 @@
         top: 0.5rem;
         right: 0.5rem;
         font-size: 0.85rem;
-      }
-
-      .arena-overlay {
-        padding: 0.85rem;
-      }
-
-      .arena-hud {
-        flex-direction: column;
-        gap: 0.5rem;
       }
 
       .cta-buttons a {
@@ -473,32 +381,12 @@
       <div class="cta-buttons">
         <a class="play-button" href="game.html">Play Now</a>
         <a class="secondary" href="terrain.html">Explorer Mode</a>
-        <a class="secondary" href="#arena">Arena Mode</a>
+        <a class="secondary" href="arena.html">Arena Mode</a>
       </div>
     </div>
     <div class="info">
       <p>Prepare yourself for an immersive 3D experience.</p>
     </div>
-    <section id="arena" class="arena-section">
-      <canvas id="arenaCanvas"></canvas>
-      <div class="arena-overlay">
-        <div class="arena-copy">
-          <p class="eyebrow">Arena Mode</p>
-          <h2>Low-Poly City Explorer</h2>
-          <p class="arena-sub">Prototype your open-world plans in a compact neon city. Drive the scout rig with WASD and sweep the skyline.</p>
-        </div>
-        <div class="arena-hud">
-          <div>
-            <span class="hud-label">Speed</span>
-            <span class="hud-value" data-arena-speed>0</span>
-          </div>
-          <div>
-            <span class="hud-label">Heading</span>
-            <span class="hud-value" data-arena-heading>0°</span>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
   <script>
     const canvas = document.getElementById('bg');
@@ -509,7 +397,7 @@
     camera.position.set(0, 8, 18);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
@@ -556,7 +444,7 @@
     scene.add(coolFlare);
 
     // Low-poly terrain
-    const terrainGeometry = new THREE.PlaneGeometry(60, 60, 90, 90);
+    const terrainGeometry = new THREE.PlaneGeometry(60, 60, 60, 60);
     const pos = terrainGeometry.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
@@ -592,7 +480,7 @@
     });
 
     const crystalSpin = [];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 22; i++) {
       const geom = new THREE.DodecahedronGeometry(THREE.MathUtils.randFloat(0.35, 1.6), 0);
       const mesh = new THREE.Mesh(geom, crystalMaterial);
       const angle = Math.random() * Math.PI * 2;
@@ -614,8 +502,8 @@
       metalness: 0.2,
       roughness: 0.4,
     });
-    const shardGeometry = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.35), 0);
-    const shardCount = 120;
+    const shardGeometry = new THREE.TetrahedronGeometry(THREE.MathUtils.randFloat(0.12, 0.32), 0);
+    const shardCount = 80;
     const shardMesh = new THREE.InstancedMesh(shardGeometry, shardMaterial, shardCount);
     shardMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     root.add(shardMesh);
@@ -645,7 +533,7 @@
 
     // Star particles
     const starGeom = new THREE.BufferGeometry();
-    const starCount = 240;
+    const starCount = 180;
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
       starPositions[i] = THREE.MathUtils.randFloatSpread(80);
@@ -657,219 +545,9 @@
     const stars = new THREE.Points(starGeom, starMat);
     root.add(stars);
 
-    // Arena mode scene
-    const arenaCanvas = document.getElementById('arenaCanvas');
-    const arenaScene = new THREE.Scene();
-    arenaScene.fog = new THREE.Fog(0x0a111f, 18, 180);
-
-    const arenaCamera = new THREE.PerspectiveCamera(65, 1, 0.1, 400);
-    arenaCamera.position.set(0, 8, 18);
-
-    const arenaRenderer = new THREE.WebGLRenderer({ canvas: arenaCanvas, antialias: true });
-    arenaRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
-    arenaRenderer.outputEncoding = THREE.sRGBEncoding;
-    arenaRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-
-    const arenaAmbient = new THREE.AmbientLight(0x6fa6ff, 0.35);
-    arenaScene.add(arenaAmbient);
-
-    const arenaKey = new THREE.DirectionalLight(0x9ad8ff, 1.2);
-    arenaKey.position.set(-20, 30, 10);
-    arenaScene.add(arenaKey);
-
-    const arenaRim = new THREE.DirectionalLight(0xff7a9e, 0.65);
-    arenaRim.position.set(22, 18, -12);
-    arenaScene.add(arenaRim);
-
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(400, 400),
-      new THREE.MeshStandardMaterial({ color: 0x0a1222, roughness: 1, metalness: 0, side: THREE.DoubleSide })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    arenaScene.add(ground);
-
-    const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x0b0f16, roughness: 0.85, metalness: 0.05 });
-    const roadWidth = 6;
-    const roadLength = 400;
-    const roadGeoH = new THREE.BoxGeometry(roadLength, 0.08, roadWidth);
-    const roadGeoV = new THREE.BoxGeometry(roadWidth, 0.08, roadLength);
-    for (let i = -6; i <= 6; i++) {
-      const roadH = new THREE.Mesh(roadGeoH, roadMaterial);
-      roadH.position.z = i * 14;
-      arenaScene.add(roadH);
-
-      const roadV = new THREE.Mesh(roadGeoV, roadMaterial);
-      roadV.position.x = i * 14;
-      arenaScene.add(roadV);
-    }
-
-    const dividerMat = new THREE.LineBasicMaterial({ color: 0x1b2b44, transparent: true, opacity: 0.6 });
-    const dividerGeo = new THREE.BufferGeometry();
-    const dividerVerts = [];
-    for (let i = -roadLength / 2; i <= roadLength / 2; i += 4) {
-      dividerVerts.push(-roadLength / 2, 0.06, i, roadLength / 2, 0.06, i);
-      dividerVerts.push(i, 0.06, -roadLength / 2, i, 0.06, roadLength / 2);
-    }
-    dividerGeo.setAttribute('position', new THREE.Float32BufferAttribute(dividerVerts, 3));
-    const dividerLines = new THREE.LineSegments(dividerGeo, dividerMat);
-    arenaScene.add(dividerLines);
-
-    const buildingGroup = new THREE.Group();
-    arenaScene.add(buildingGroup);
-    const palette = [0x1c2f4a, 0x243a63, 0x2f4b7a, 0x234061, 0x1b2d43];
-
-    function addBuilding(x, z) {
-      const w = 4 + Math.random() * 4;
-      const d = 4 + Math.random() * 4;
-      const h = 3 + Math.random() * 14;
-      const geometry = new THREE.BoxGeometry(w, h, d);
-      const color = palette[Math.floor(Math.random() * palette.length)];
-      const material = new THREE.MeshStandardMaterial({
-        color,
-        emissive: 0x0b1a2c,
-        emissiveIntensity: 0.25 + Math.random() * 0.2,
-        metalness: 0.25,
-        roughness: 0.55,
-        flatShading: true,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(x, h / 2, z);
-      mesh.castShadow = false;
-      mesh.receiveShadow = true;
-      buildingGroup.add(mesh);
-
-      if (Math.random() > 0.6) {
-        const antenna = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.1, 0.15, h * 0.25, 6),
-          new THREE.MeshStandardMaterial({ color: 0x5cf0ff, emissive: 0x5cf0ff, emissiveIntensity: 0.6, roughness: 0.2 })
-        );
-        antenna.position.set(0, h / 2 + h * 0.125, 0);
-        mesh.add(antenna);
-      }
-    }
-
-    const gridSize = 6;
-    const spacing = 14;
-    for (let gx = -gridSize; gx <= gridSize; gx++) {
-      for (let gz = -gridSize; gz <= gridSize; gz++) {
-        if (gx % 2 === 0 || gz % 2 === 0) continue;
-        const jitterX = (Math.random() - 0.5) * 3;
-        const jitterZ = (Math.random() - 0.5) * 3;
-        addBuilding(gx * spacing + jitterX, gz * spacing + jitterZ);
-      }
-    }
-
-    const plazaGeometry = new THREE.CircleGeometry(8, 32);
-    const plaza = new THREE.Mesh(
-      plazaGeometry,
-      new THREE.MeshStandardMaterial({ color: 0x0f1c2e, emissive: 0x0c1a2b, roughness: 0.75 })
-    );
-    plaza.rotation.x = -Math.PI / 2;
-    plaza.position.set(0, 0.02, 0);
-    arenaScene.add(plaza);
-
-    const plazaGlow = new THREE.PointLight(0x3fc3ff, 1.5, 24, 2.5);
-    plazaGlow.position.set(0, 2.4, 0);
-    arenaScene.add(plazaGlow);
-
-    const explorer = new THREE.Group();
-    const hull = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4, 0.6, 2.2),
-      new THREE.MeshStandardMaterial({
-        color: 0x1bb4ff,
-        emissive: 0x0c2847,
-        emissiveIntensity: 0.7,
-        metalness: 0.45,
-        roughness: 0.35,
-        flatShading: true,
-      })
-    );
-    explorer.add(hull);
-
-    const cockpit = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 0.35, 0.9),
-      new THREE.MeshStandardMaterial({ color: 0x8fd7ff, emissive: 0x5cc8ff, emissiveIntensity: 0.4, roughness: 0.15 })
-    );
-    cockpit.position.set(0, 0.25, 0.15);
-    explorer.add(cockpit);
-
-    const beacon = new THREE.PointLight(0x4ce0ff, 1.6, 18, 2.2);
-    beacon.position.set(0, 0.8, 0);
-    explorer.add(beacon);
-
-    explorer.position.set(0, 0.35, 0);
-    arenaScene.add(explorer);
-
-    let explorerHeading = Math.PI;
-    let explorerVelocity = 0;
-    const arenaKeys = {};
-    const arenaSpeedEl = document.querySelector('[data-arena-speed]');
-    const arenaHeadingEl = document.querySelector('[data-arena-heading]');
-
-    document.addEventListener('keydown', (e) => {
-      arenaKeys[e.code] = true;
-    });
-
-    document.addEventListener('keyup', (e) => {
-      arenaKeys[e.code] = false;
-    });
-
-    function resizeArena(force = false) {
-      if (!arenaCanvas) return;
-      const width = arenaCanvas.clientWidth;
-      const height = arenaCanvas.clientHeight || window.innerHeight * 0.6;
-      if (!width || !height) return;
-      if (!force && !arenaNeedsResize) return;
-      arenaCamera.aspect = width / height;
-      arenaCamera.updateProjectionMatrix();
-      arenaRenderer.setSize(width, height, false);
-      arenaNeedsResize = false;
-    }
-
-    function updateExplorer(delta) {
-      const turnRate = 1.6;
-      const accel = 12;
-      const brake = 8;
-      if (arenaKeys['KeyA']) explorerHeading += turnRate * delta;
-      if (arenaKeys['KeyD']) explorerHeading -= turnRate * delta;
-      if (arenaKeys['KeyW']) explorerVelocity += accel * delta;
-      if (arenaKeys['KeyS']) explorerVelocity -= brake * delta;
-
-      explorerVelocity = THREE.MathUtils.clamp(explorerVelocity, -6, 22);
-      explorerVelocity *= 1 - Math.min(1, delta * 1.2);
-
-      const move = explorerVelocity * delta;
-      explorer.position.x += Math.sin(explorerHeading) * move;
-      explorer.position.z += Math.cos(explorerHeading) * move;
-      explorer.position.y = 0.35 + Math.sin(performance.now() * 0.003) * 0.05;
-      explorer.rotation.y = explorerHeading;
-
-      const speedKph = Math.abs(explorerVelocity * 3.2);
-      if (arenaSpeedEl) arenaSpeedEl.textContent = speedKph.toFixed(1);
-      if (arenaHeadingEl) {
-        const headingDeg = Math.round((explorerHeading % (Math.PI * 2)) * 180 / Math.PI + 360) % 360;
-        arenaHeadingEl.textContent = `${headingDeg}°`;
-      }
-    }
-
-    function updateArenaCamera(delta) {
-      const followDistance = 12;
-      const followHeight = 6.5;
-      const offset = new THREE.Vector3(
-        Math.sin(explorerHeading) * -followDistance,
-        followHeight,
-        Math.cos(explorerHeading) * -followDistance
-      );
-      const targetPos = explorer.position.clone().add(offset);
-      arenaCamera.position.lerp(targetPos, 1 - Math.exp(-delta * 3));
-      const lookTarget = explorer.position.clone().add(new THREE.Vector3(0, 2, 0));
-      arenaCamera.lookAt(lookTarget);
-    }
-
     let lastWidth = 0;
     let lastHeight = 0;
     let needsResize = true;
-    let arenaNeedsResize = true;
     function sizeRendererToCanvas(force = false) {
       if (!force && !needsResize) return;
       const { width, height } = canvas.getBoundingClientRect();
@@ -884,10 +562,8 @@
     }
 
     sizeRendererToCanvas(true);
-    resizeArena(true);
     window.addEventListener('resize', () => {
       needsResize = true;
-      arenaNeedsResize = true;
     });
 
     // Fullscreen handling
@@ -960,10 +636,6 @@
       stars.rotation.y += 0.0005;
 
       renderer.render(scene, camera);
-
-      updateExplorer(delta);
-      updateArenaCamera(delta);
-      arenaRenderer.render(arenaScene, arenaCamera);
     }
     animate();
   </script>

@@ -190,7 +190,7 @@
     .controls-shell {
       position: absolute;
       inset: 0;
-      padding: 1rem;
+      padding: 1rem 1.4rem;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
@@ -198,17 +198,45 @@
       gap: 1rem;
     }
 
+    .controls-panel {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
     .control-pad {
       width: min(220px, 32vw);
       aspect-ratio: 1 / 1;
       border-radius: 22px;
-      background: rgba(4, 10, 18, 0.55);
+      background: linear-gradient(160deg, rgba(4, 10, 18, 0.68), rgba(4, 10, 18, 0.45));
       border: 1px solid rgba(0, 200, 255, 0.2);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
       position: relative;
       overflow: hidden;
       pointer-events: auto;
       touch-action: none;
+    }
+
+    .control-pad::after,
+    .control-pad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      margin: 0.85rem;
+      border-radius: 18px;
+      border: 1px dashed rgba(106, 186, 255, 0.25);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .control-pad::after {
+      inset: 50%;
+      width: 18px;
+      height: 18px;
+      margin: -9px;
+      background: radial-gradient(circle, rgba(140, 220, 255, 0.35), rgba(12, 140, 255, 0));
+      border: 1px solid rgba(0, 200, 255, 0.55);
     }
 
     .pad-label {
@@ -253,6 +281,33 @@
       color: #dfe8ff;
     }
 
+    .controls-legend {
+      display: grid;
+      gap: 0.25rem;
+      padding: 0.65rem 0.85rem;
+      background: rgba(5, 10, 18, 0.72);
+      border: 1px solid rgba(0, 200, 255, 0.28);
+      border-radius: 14px;
+      backdrop-filter: blur(10px);
+      pointer-events: none;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .legend-title {
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.14rem;
+      font-size: 0.78rem;
+      color: rgba(180, 210, 255, 0.9);
+    }
+
+    .legend-copy {
+      margin: 0;
+      color: rgba(225, 236, 255, 0.95);
+      font-weight: 600;
+      font-size: 0.96rem;
+    }
+
     @media (max-width: 768px) {
       header {
         padding-inline: 0.9rem;
@@ -271,6 +326,22 @@
 
       .hud-bottom {
         grid-template-columns: 1fr;
+      }
+
+      .controls-shell {
+        padding: 0.5rem 0.75rem;
+        gap: 0.65rem;
+        align-items: flex-end;
+      }
+
+      .controls-panel {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .controls-legend {
+        width: 100%;
+        order: 3;
       }
 
       .control-pad {
@@ -330,13 +401,19 @@
       </div>
     </div>
     <div class="controls-shell">
-      <div class="control-pad" data-control="steer">
-        <span class="pad-label">Steer</span>
-        <div class="pad-thumb"></div>
+      <div class="controls-legend">
+        <p class="legend-title">Mobile controls</p>
+        <p class="legend-copy">Left pad steers, right pad handles throttle & brake.</p>
       </div>
-      <div class="control-pad" data-control="drive">
-        <span class="pad-label">Drive</span>
-        <div class="pad-thumb"></div>
+      <div class="controls-panel">
+        <div class="control-pad" data-control="steer">
+          <span class="pad-label">Steer</span>
+          <div class="pad-thumb"></div>
+        </div>
+        <div class="control-pad" data-control="drive">
+          <span class="pad-label">Drive</span>
+          <div class="pad-thumb"></div>
+        </div>
       </div>
     </div>
   </main>
@@ -384,6 +461,8 @@
     const tileSize = 20 * metersPerUnit; // modular tile from the provided road reference art
     const blockSpacing = 64 * metersPerUnit;
     const gridHalf = 2; // creates 5 x 5 intersections (4 x 4 blocks)
+    const intersections = [];
+    const intersectionKeys = new Set();
 
     function addStraightRoad(length, width, x, z, rotation = 0) {
       const road = new THREE.Mesh(new THREE.BoxGeometry(length, 0.08, width), roadMaterial);
@@ -408,6 +487,12 @@
       const junction = new THREE.Mesh(new THREE.BoxGeometry(tileSize, 0.08, tileSize), roadMaterial);
       junction.position.set(x, 0.02, z);
       roadGroup.add(junction);
+
+      const key = `${x},${z}`;
+      if (!intersectionKeys.has(key)) {
+        intersections.push(new THREE.Vector3(x, 0, z));
+        intersectionKeys.add(key);
+      }
 
       const crosswalkGeo = new THREE.BoxGeometry(0.5, 0.1, 6);
       const offsets = [-(tileSize / 2 - 3), tileSize / 2 - 3];
@@ -437,10 +522,71 @@
       }
     }
 
+    const streetLightMaterial = new THREE.MeshStandardMaterial({ color: 0x0a1018, roughness: 0.55, metalness: 0.4 });
+    const lampCapMaterial = new THREE.MeshStandardMaterial({ color: 0x9cd8ff, emissive: 0x6ac0ff, emissiveIntensity: 0.8, roughness: 0.18 });
+
+    function addLampPost(x, z, rotation = 0) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 5.5, 10), streetLightMaterial);
+      pole.position.set(x, 2.75, z);
+      pole.rotation.y = rotation;
+
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 1.1), streetLightMaterial);
+      arm.position.set(x + Math.sin(rotation) * 0.55, 5.2, z + Math.cos(rotation) * 0.55);
+      arm.rotation.y = rotation;
+
+      const lampHead = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 0.4, 10), lampCapMaterial);
+      lampHead.position.set(
+        x + Math.sin(rotation) * 0.95,
+        5.2,
+        z + Math.cos(rotation) * 0.95
+      );
+      lampHead.rotation.z = Math.PI / 2;
+
+      const glow = new THREE.PointLight(0x7cc9ff, 0.7, 16, 2);
+      glow.position.set(
+        x + Math.sin(rotation) * 0.95,
+        5,
+        z + Math.cos(rotation) * 0.95
+      );
+
+      propGroup.add(pole, arm, lampHead, glow);
+    }
+
+    function populateStreetFurniture() {
+      const inset = roadWidth * 0.55;
+      intersections.forEach((node) => {
+        const offsets = [
+          [inset, inset],
+          [-inset, inset],
+          [inset, -inset],
+          [-inset, -inset],
+        ];
+        offsets.forEach(([ox, oz]) => {
+          const px = node.x + ox;
+          const pz = node.z + oz;
+          addLampPost(px, pz, Math.atan2(-ox, -oz));
+        });
+      });
+
+      const planterGeo = new THREE.BoxGeometry(2.4, 0.6, 2.4);
+      const planterMat = new THREE.MeshStandardMaterial({ color: 0x2b3445, roughness: 0.7, metalness: 0.15, emissive: 0x11161f, emissiveIntensity: 0.3 });
+      for (let i = 0; i < 18; i++) {
+        const pos = intersections[Math.floor(Math.random() * intersections.length)];
+        if (!pos) continue;
+        const jitterX = (Math.random() - 0.5) * (roadWidth * 0.6);
+        const jitterZ = (Math.random() - 0.5) * (roadWidth * 0.6);
+        const planter = new THREE.Mesh(planterGeo, planterMat);
+        planter.position.set(pos.x + jitterX, 0.3, pos.z + jitterZ);
+        propGroup.add(planter);
+      }
+    }
+
     const buildingGroup = new THREE.Group();
     scene.add(buildingGroup);
     const buildingColliders = [];
     const palette = [0xd1cdc4, 0xb2aca2, 0x8f8578, 0x6f675c];
+    const propGroup = new THREE.Group();
+    scene.add(propGroup);
 
     function createArtDecoBuilding(width, depth, height) {
       const building = new THREE.Group();
@@ -531,6 +677,8 @@
       }
     }
 
+    populateStreetFurniture();
+
     const plazaGeometry = new THREE.CircleGeometry(10, 30);
     const plaza = new THREE.Mesh(
       plazaGeometry,
@@ -545,6 +693,9 @@
     scene.add(plazaGlow);
 
     const explorer = new THREE.Group();
+    const explorerBody = new THREE.Group();
+    explorer.add(explorerBody);
+
     const hull = new THREE.Mesh(
       new THREE.BoxGeometry(1.4, 0.6, 2.2),
       new THREE.MeshStandardMaterial({
@@ -556,24 +707,50 @@
         flatShading: true,
       })
     );
-    explorer.add(hull);
+    explorerBody.add(hull);
 
     const cockpit = new THREE.Mesh(
       new THREE.BoxGeometry(1, 0.35, 0.9),
       new THREE.MeshStandardMaterial({ color: 0x8fd7ff, emissive: 0x5cc8ff, emissiveIntensity: 0.4, roughness: 0.15 })
     );
     cockpit.position.set(0, 0.25, 0.15);
-    explorer.add(cockpit);
+    explorerBody.add(cockpit);
+
+    const wheelMeshes = [];
+    const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.22, 18);
+    wheelGeo.rotateZ(Math.PI / 2);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0c0f16, roughness: 0.6, metalness: 0.25, emissive: 0x080b12 });
+    const wheelPositions = [
+      [0.65, 0.14, 0.9],
+      [-0.65, 0.14, 0.9],
+      [0.65, 0.14, -0.9],
+      [-0.65, 0.14, -0.9],
+    ];
+    wheelPositions.forEach(([x, y, z]) => {
+      const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+      wheel.position.set(x, y, z);
+      wheel.castShadow = false;
+      explorerBody.add(wheel);
+      wheelMeshes.push(wheel);
+    });
 
     const beacon = new THREE.PointLight(0x4ce0ff, 1.4, 14, 2);
     beacon.position.set(0, 0.8, 0);
-    explorer.add(beacon);
+    explorerBody.add(beacon);
 
     explorer.position.set(0, 0.35, 0);
     scene.add(explorer);
 
     let explorerHeading = Math.PI;
     let explorerVelocity = 0;
+    let steeringAngle = 0;
+    let wheelSpin = 0;
+    const wheelBase = 2.6;
+    const maxSteer = 0.6;
+    const accel = 14;
+    const brake = 16;
+    const rollingResistance = 1.9;
+    const wheelRadius = 0.32;
     const keys = {};
     const padState = {
       steer: { active: false, startX: 0, startY: 0, dx: 0, dy: 0 },
@@ -650,6 +827,127 @@
       pad.addEventListener('pointerleave', handlePadEnd);
     });
 
+    const trafficGroup = new THREE.Group();
+    scene.add(trafficGroup);
+    const trafficVehicles = [];
+    const laneOffset = 2.1;
+    const gridLimit = gridHalf * blockSpacing;
+
+    function laneOffsetVector(heading, offset) {
+      return new THREE.Vector3(
+        Math.sin(heading + Math.PI / 2) * offset,
+        0,
+        Math.cos(heading + Math.PI / 2) * offset
+      );
+    }
+
+    function pickNextHeading(currentHeading, currentNode) {
+      const candidates = [currentHeading, currentHeading + Math.PI / 2, currentHeading - Math.PI / 2];
+      const valid = candidates
+        .map((h) => THREE.MathUtils.euclideanModulo(h, Math.PI * 2))
+        .filter((h) => {
+          const nx = currentNode.x + Math.sin(h) * blockSpacing;
+          const nz = currentNode.z + Math.cos(h) * blockSpacing;
+          return Math.abs(nx) <= gridLimit && Math.abs(nz) <= gridLimit;
+        });
+      if (!valid.length) return currentHeading + Math.PI;
+      const bias = Math.random() < 0.55 ? valid[0] : valid[Math.floor(Math.random() * valid.length)];
+      return bias;
+    }
+
+    function createTrafficMesh() {
+      const body = new THREE.Group();
+      const chassis = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 0.5, 2),
+        new THREE.MeshStandardMaterial({ color: 0xff9a42, roughness: 0.4, metalness: 0.3, emissive: 0x2b1400, emissiveIntensity: 0.4 })
+      );
+      chassis.position.y = 0.35;
+      body.add(chassis);
+
+      const canopy = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 0.32, 0.9),
+        new THREE.MeshStandardMaterial({ color: 0x111820, emissive: 0x0d1a2d, emissiveIntensity: 0.5, roughness: 0.2 })
+      );
+      canopy.position.set(0, 0.7, 0.25);
+      body.add(canopy);
+
+      const headlightGeo = new THREE.BoxGeometry(0.2, 0.1, 0.08);
+      const headlightMat = new THREE.MeshStandardMaterial({ color: 0xcde8ff, emissive: 0x8fd6ff, emissiveIntensity: 1.2 });
+      const headlights = new THREE.Mesh(headlightGeo, headlightMat);
+      headlights.position.set(0.4, 0.6, 1.05);
+      const headlightsMirror = headlights.clone();
+      headlightsMirror.position.x = -0.4;
+      body.add(headlights, headlightsMirror);
+
+      const taillightGeo = new THREE.BoxGeometry(0.18, 0.12, 0.08);
+      const taillightMat = new THREE.MeshStandardMaterial({ color: 0xff6666, emissive: 0xff3737, emissiveIntensity: 1.4 });
+      const tail = new THREE.Mesh(taillightGeo, taillightMat);
+      tail.position.set(0.35, 0.55, -1.05);
+      const tailMirror = tail.clone();
+      tailMirror.position.x = -0.35;
+      body.add(tail, tailMirror);
+
+      return body;
+    }
+
+    function spawnTrafficVehicle() {
+      if (!intersections.length) return;
+      const startNode = intersections[Math.floor(Math.random() * intersections.length)];
+      const heading = [0, Math.PI / 2, Math.PI, -Math.PI / 2][Math.floor(Math.random() * 4)];
+      const vehicle = createTrafficMesh();
+      const laneValue = laneOffset * (Math.random() > 0.5 ? 1 : -1);
+      const lateral = laneOffsetVector(heading, laneValue);
+      vehicle.position.copy(startNode.clone().add(lateral)).setY(0.28);
+      trafficGroup.add(vehicle);
+
+      const state = {
+        mesh: vehicle,
+        heading,
+        speed: 6 + Math.random() * 6,
+        currentNode: startNode.clone(),
+        target: null,
+        lane: laneValue,
+      };
+      state.heading = pickNextHeading(state.heading, state.currentNode);
+      setNextTrafficTarget(state);
+      trafficVehicles.push(state);
+    }
+
+    function setNextTrafficTarget(vehicle) {
+      vehicle.currentNode = vehicle.target ? vehicle.target.clone().sub(laneOffsetVector(vehicle.heading, vehicle.lane)) : vehicle.currentNode;
+      const nextHeading = pickNextHeading(vehicle.heading, vehicle.currentNode);
+      vehicle.heading = THREE.MathUtils.lerpAngle(vehicle.heading, nextHeading, 1);
+      const nextNode = new THREE.Vector3(
+        vehicle.currentNode.x + Math.sin(nextHeading) * blockSpacing,
+        0,
+        vehicle.currentNode.z + Math.cos(nextHeading) * blockSpacing
+      );
+      const lateral = laneOffsetVector(nextHeading, vehicle.lane);
+      vehicle.target = nextNode.add(lateral);
+    }
+
+    function updateTraffic(delta) {
+      trafficVehicles.forEach((vehicle) => {
+        if (!vehicle.target) return;
+        const toTarget = vehicle.target.clone().sub(vehicle.mesh.position);
+        const dist = toTarget.length();
+        const desiredHeading = Math.atan2(toTarget.x, toTarget.z);
+        vehicle.heading = THREE.MathUtils.lerpAngle(vehicle.heading, desiredHeading, 1 - Math.exp(-delta * 3));
+
+        const move = Math.min(dist, vehicle.speed * delta);
+        vehicle.mesh.position.x += Math.sin(vehicle.heading) * move;
+        vehicle.mesh.position.z += Math.cos(vehicle.heading) * move;
+        vehicle.mesh.position.y = 0.28 + Math.sin(performance.now() * 0.004 + move) * 0.03;
+        vehicle.mesh.rotation.y = vehicle.heading;
+
+        if (dist < 0.8) {
+          setNextTrafficTarget(vehicle);
+        }
+      });
+    }
+
+    Array.from({ length: 8 }).forEach(spawnTrafficVehicle);
+
     function resizeArena(force = false) {
       const width = canvas.clientWidth;
       const height = canvas.clientHeight || window.innerHeight;
@@ -661,22 +959,19 @@
     }
 
     function updateExplorer(delta) {
-      const turnRate = 1.8;
-      const accel = 12;
-      const brake = 10;
-
       const steerInput = (keys['KeyA'] ? 1 : 0) + (keys['KeyD'] ? -1 : 0) + padState.steer.dx;
       const driveInput = (keys['KeyW'] ? 1 : 0) + (keys['KeyS'] ? -1 : 0) - padState.drive.dy;
 
-      explorerHeading += steerInput * turnRate * delta;
-      if (driveInput > 0) {
-        explorerVelocity += driveInput * accel * delta;
-      } else if (driveInput < 0) {
-        explorerVelocity += driveInput * brake * delta;
-      }
+      const desiredSteer = THREE.MathUtils.clamp(steerInput, -1, 1) * maxSteer;
+      steeringAngle = THREE.MathUtils.lerp(steeringAngle, desiredSteer, 1 - Math.exp(-delta * 8));
 
-      explorerVelocity = THREE.MathUtils.clamp(explorerVelocity, -5, 18);
-      explorerVelocity *= 1 - Math.min(1, delta * 1.25);
+      const thrust = driveInput > 0 ? accel : brake;
+      explorerVelocity += driveInput * thrust * delta;
+      explorerVelocity -= Math.sign(explorerVelocity) * rollingResistance * delta * (1 + Math.abs(explorerVelocity) * 0.02);
+      explorerVelocity = THREE.MathUtils.clamp(explorerVelocity, -6, 21);
+
+      const turnAmount = Math.tan(steeringAngle) * (explorerVelocity / wheelBase);
+      explorerHeading = THREE.MathUtils.euclideanModulo(explorerHeading + turnAmount * delta + Math.PI * 2, Math.PI * 2);
 
       const move = explorerVelocity * delta;
       const proposedX = explorer.position.x + Math.sin(explorerHeading) * move;
@@ -691,11 +986,19 @@
         explorer.position.x = proposedX;
         explorer.position.z = proposedZ;
       } else {
-        explorerVelocity = 0;
+        explorerVelocity *= -0.2;
       }
 
-      explorer.position.y = 0.35 + Math.sin(performance.now() * 0.003) * 0.05;
-      explorer.rotation.y = explorerHeading;
+      wheelSpin += move / wheelRadius;
+      wheelMeshes.forEach((wheel) => {
+        wheel.rotation.x = wheelSpin;
+      });
+
+      const bodyRoll = THREE.MathUtils.clamp(-steeringAngle * Math.min(1.4, Math.abs(explorerVelocity) / 10), -0.5, 0.5);
+      const bodyPitch = THREE.MathUtils.clamp(-explorerVelocity * 0.025, -0.3, 0.22);
+
+      explorer.position.y = 0.35 + Math.sin(performance.now() * 0.003 + move) * 0.05;
+      explorer.rotation.set(bodyPitch, explorerHeading, bodyRoll);
 
       const speedKph = Math.abs(explorerVelocity * 3.2);
       if (speedEl) speedEl.textContent = speedKph.toFixed(1);
@@ -728,6 +1031,7 @@
       const delta = clock.getDelta();
 
       updateExplorer(delta);
+      updateTraffic(delta);
       updateCamera(delta);
 
       renderer.render(scene, camera);

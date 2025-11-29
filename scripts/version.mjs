@@ -1,4 +1,4 @@
-export const VERSION_NUMBER = '0.23';
+export const VERSION_NUMBER = '0.23.2';
 export const VERSION_TAG = `v${VERSION_NUMBER}`;
 
 function stripExistingVersion(title) {

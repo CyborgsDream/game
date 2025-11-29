@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arena Mode - Neon Game Hub</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="share-modal.js" defer></script>
   <style>
     :root {
       color-scheme: dark;
@@ -913,10 +914,15 @@
       trafficVehicles.push(state);
     }
 
+    function lerpAngle(a, b, t) {
+      const delta = THREE.MathUtils.euclideanModulo(b - a + Math.PI, Math.PI * 2) - Math.PI;
+      return a + delta * THREE.MathUtils.clamp(t, 0, 1);
+    }
+
     function setNextTrafficTarget(vehicle) {
       vehicle.currentNode = vehicle.target ? vehicle.target.clone().sub(laneOffsetVector(vehicle.heading, vehicle.lane)) : vehicle.currentNode;
       const nextHeading = pickNextHeading(vehicle.heading, vehicle.currentNode);
-      vehicle.heading = THREE.MathUtils.lerpAngle(vehicle.heading, nextHeading, 1);
+      vehicle.heading = lerpAngle(vehicle.heading, nextHeading, 1);
       const nextNode = new THREE.Vector3(
         vehicle.currentNode.x + Math.sin(nextHeading) * blockSpacing,
         0,
@@ -932,7 +938,7 @@
         const toTarget = vehicle.target.clone().sub(vehicle.mesh.position);
         const dist = toTarget.length();
         const desiredHeading = Math.atan2(toTarget.x, toTarget.z);
-        vehicle.heading = THREE.MathUtils.lerpAngle(vehicle.heading, desiredHeading, 1 - Math.exp(-delta * 3));
+        vehicle.heading = lerpAngle(vehicle.heading, desiredHeading, 1 - Math.exp(-delta * 3));
 
         const move = Math.min(dist, vehicle.speed * delta);
         vehicle.mesh.position.x += Math.sin(vehicle.heading) * move;

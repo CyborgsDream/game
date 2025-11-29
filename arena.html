@@ -426,12 +426,15 @@
     const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 400);
     camera.position.set(0, 8, 18);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
+    const MAX_PIXEL_RATIO = 1.1;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
     const clock = new THREE.Clock();
+    let animationId = null;
+    let isContextLost = false;
 
     const ambient = new THREE.AmbientLight(0x7fa8ff, 0.32);
     scene.add(ambient);
@@ -952,7 +955,8 @@
       });
     }
 
-    Array.from({ length: 8 }).forEach(spawnTrafficVehicle);
+    const trafficBudget = 6;
+    Array.from({ length: trafficBudget }).forEach(spawnTrafficVehicle);
 
     function resizeArena(force = false) {
       const width = canvas.clientWidth;
@@ -1029,11 +1033,16 @@
       camera.lookAt(lookTarget);
     }
 
-    resizeArena(true);
-    window.addEventListener('resize', () => resizeArena(true));
+    function stopRenderLoop() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    }
 
     function animate() {
-      requestAnimationFrame(animate);
+      if (isContextLost || document.hidden) return;
+      animationId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
 
       updateExplorer(delta);
@@ -1043,7 +1052,39 @@
       renderer.render(scene, camera);
     }
 
-    animate();
+    function startRenderLoop() {
+      if (animationId || isContextLost) return;
+      clock.getDelta();
+      animationId = requestAnimationFrame(animate);
+    }
+
+    resizeArena(true);
+    window.addEventListener('resize', () => resizeArena(true));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopRenderLoop();
+      } else if (!isContextLost) {
+        clock.getDelta();
+        startRenderLoop();
+      }
+    });
+
+    canvas.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      isContextLost = true;
+      stopRenderLoop();
+    });
+
+    canvas.addEventListener('webglcontextrestored', () => {
+      isContextLost = false;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
+      resizeArena(true);
+      clock.start();
+      clock.getDelta();
+      startRenderLoop();
+    });
+
+    startRenderLoop();
   </script>
 </body>
 </html>

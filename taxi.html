@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Taxi Assignment</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --chrome: rgba(7, 12, 21, 0.85);
+      --accent: #f6c25b;
+      --glow: rgba(246, 194, 91, 0.3);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(circle at 24% 18%, rgba(246, 194, 91, 0.12), transparent 30%),
+        radial-gradient(circle at 70% 12%, rgba(97, 198, 255, 0.16), transparent 32%),
+        linear-gradient(135deg, #05080f, #0a1223 58%, #04070f);
+      color: #fdf7eb;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 1rem;
+      padding: 1.5rem clamp(1rem, 2vw, 2rem) 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(246, 194, 91, 0.35);
+      background: var(--chrome);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      border-radius: 14px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3vw, 2.25rem);
+      letter-spacing: 1px;
+      color: #ffeec4;
+      text-shadow: 0 0 22px rgba(246, 194, 91, 0.4);
+    }
+
+    .title-block p {
+      margin: 4px 0 0;
+      color: #d8e5ff;
+      font-size: 0.98rem;
+    }
+
+    .cta-links {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .cta-links a {
+      text-decoration: none;
+      padding: 0.6rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(246, 194, 91, 0.4);
+      color: #0c0f17;
+      background: linear-gradient(135deg, #f6c25b, #ffd58a);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      box-shadow: 0 10px 26px rgba(246, 194, 91, 0.3);
+    }
+
+    .cta-links a.secondary {
+      background: rgba(246, 194, 91, 0.12);
+      color: #ffeec4;
+      border-color: rgba(246, 194, 91, 0.25);
+      box-shadow: none;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .frame {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(246, 194, 91, 0.32);
+      background: linear-gradient(180deg, rgba(7, 12, 21, 0.92), rgba(7, 12, 21, 0.76));
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+    }
+
+    .frame header {
+      border: none;
+      border-radius: 0;
+      background: rgba(10, 14, 23, 0.9);
+      box-shadow: inset 0 -1px 0 rgba(246, 194, 91, 0.18);
+    }
+
+    iframe {
+      width: 100%;
+      height: 70vh;
+      border: none;
+      display: block;
+      background: #01030a;
+    }
+
+    .frame .status {
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      color: #f8e9c9;
+      background: linear-gradient(90deg, rgba(246, 194, 91, 0.16), rgba(10, 12, 18, 0.8));
+      border-top: 1px solid rgba(246, 194, 91, 0.22);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #ffb347;
+      box-shadow: 0 0 12px rgba(246, 194, 91, 0.9);
+    }
+
+    .panel {
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      border: 1px solid rgba(246, 194, 91, 0.24);
+      background: linear-gradient(160deg, rgba(7, 12, 21, 0.9), rgba(7, 12, 21, 0.74));
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .panel h2 {
+      margin: 0 0 0.5rem;
+      color: #ffeec4;
+      letter-spacing: 0.5px;
+    }
+
+    .panel ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: #d8e5ff;
+      line-height: 1.6;
+    }
+
+    .note {
+      margin-top: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      background: rgba(246, 194, 91, 0.08);
+      border: 1px dashed rgba(246, 194, 91, 0.3);
+      border-radius: 12px;
+      color: #fbe3a0;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      iframe {
+        height: 60vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-block">
+      <h1>Great Taxi Assignment</h1>
+      <p>A compact GTA-like taxi challenge from the Vibe coding competition.</p>
+    </div>
+    <div class="cta-links">
+      <a href="index.html">Back to Hub</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="frame">
+      <header>
+        <div class="title-block">
+          <h1 style="font-size: 1.25rem; margin: 0;">Play the Taxi Build</h1>
+          <p style="margin: 2px 0 0;">Embedded directly from the original Netlify bundle.</p>
+        </div>
+      </header>
+      <iframe id="taxi-frame" title="Great Taxi Assignment" src="https://great-taxi-assignment.netlify.app/" allowfullscreen></iframe>
+      <div class="status" id="status">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="status-text">Loading the remote taxi client…</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>How to drive</h2>
+      <ul>
+        <li>Use <strong>WASD</strong> or the <strong>arrow keys</strong> to cruise around the city.</li>
+        <li>Follow the highlighted customers, then deliver them to their drop-off zones.</li>
+        <li>Brake gently before corners to avoid sliding past your fares.</li>
+        <li>Tap <strong>R</strong> if you need to reset your car back onto the road.</li>
+      </ul>
+      <div class="note" id="fallback-note" hidden>
+        The embedded Netlify build could not be reached from this environment. Check your connection or open
+        <a href="https://great-taxi-assignment.netlify.app/" target="_blank" rel="noreferrer">the source build</a>
+        in a new tab.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const iframe = document.getElementById('taxi-frame');
+    const status = document.getElementById('status-text');
+    const note = document.getElementById('fallback-note');
+    const dot = document.querySelector('.status .dot');
+
+    let loaded = false;
+    const timeout = setTimeout(() => {
+      if (loaded) return;
+      status.textContent = 'Remote build is taking longer than expected…';
+      dot.style.background = '#ff8b5f';
+      dot.style.boxShadow = '0 0 12px rgba(255, 139, 95, 0.9)';
+      note.hidden = false;
+    }, 6500);
+
+    iframe.addEventListener('load', () => {
+      loaded = true;
+      clearTimeout(timeout);
+      status.textContent = 'Taxi client loaded. Have fun!';
+      dot.style.background = '#7be89a';
+      dot.style.boxShadow = '0 0 12px rgba(123, 232, 154, 0.9)';
+    });
+
+    iframe.addEventListener('error', () => {
+      loaded = false;
+      clearTimeout(timeout);
+      status.textContent = 'Unable to reach the remote build.';
+      dot.style.background = '#ff5f5f';
+      dot.style.boxShadow = '0 0 12px rgba(255, 95, 95, 0.9)';
+      note.hidden = false;
+    });
+  </script>
+</body>
+</html>

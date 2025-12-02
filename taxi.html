@@ -22,61 +22,38 @@
         linear-gradient(135deg, #05080f, #0a1223 58%, #04070f);
       color: #fdf7eb;
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: 1fr;
       gap: 1rem;
-      padding: 1.5rem clamp(1rem, 2vw, 2rem) 2rem;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.75rem 1rem;
-      border: 1px solid rgba(246, 194, 91, 0.35);
-      background: var(--chrome);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-      border-radius: 14px;
+      padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 2vw, 2rem) 1.5rem;
     }
 
     .title-block h1 {
       margin: 0;
-      font-size: clamp(1.6rem, 3vw, 2.25rem);
-      letter-spacing: 1px;
+      font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+      letter-spacing: 0.6px;
       color: #ffeec4;
-      text-shadow: 0 0 22px rgba(246, 194, 91, 0.4);
+      text-shadow: 0 0 14px rgba(246, 194, 91, 0.25);
     }
 
     .title-block p {
-      margin: 4px 0 0;
+      margin: 3px 0 0;
       color: #d8e5ff;
-      font-size: 0.98rem;
+      font-size: 0.95rem;
     }
 
-    .cta-links {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-
-    .cta-links a {
+    .back-link {
+      justify-self: end;
+      align-self: start;
       text-decoration: none;
-      padding: 0.6rem 1rem;
+      padding: 0.5rem 0.9rem;
       border-radius: 999px;
-      border: 1px solid rgba(246, 194, 91, 0.4);
+      border: 1px solid rgba(246, 194, 91, 0.35);
       color: #0c0f17;
       background: linear-gradient(135deg, #f6c25b, #ffd58a);
       font-weight: 600;
       letter-spacing: 0.3px;
-      box-shadow: 0 10px 26px rgba(246, 194, 91, 0.3);
-    }
-
-    .cta-links a.secondary {
-      background: rgba(246, 194, 91, 0.12);
-      color: #ffeec4;
-      border-color: rgba(246, 194, 91, 0.25);
-      box-shadow: none;
+      box-shadow: 0 8px 18px rgba(246, 194, 91, 0.25);
+      width: fit-content;
     }
 
     main {
@@ -84,6 +61,7 @@
       grid-template-columns: 2fr 1fr;
       gap: 1rem;
       align-items: start;
+      position: relative;
     }
 
     .frame {
@@ -92,22 +70,23 @@
       overflow: hidden;
       border: 1px solid rgba(246, 194, 91, 0.32);
       background: linear-gradient(180deg, rgba(7, 12, 21, 0.92), rgba(7, 12, 21, 0.76));
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
     }
 
     .frame header {
       border: none;
       border-radius: 0;
-      background: rgba(10, 14, 23, 0.9);
+      background: rgba(10, 14, 23, 0.94);
       box-shadow: inset 0 -1px 0 rgba(246, 194, 91, 0.18);
     }
 
     iframe {
       width: 100%;
-      height: 70vh;
+      height: min(82vh, 920px);
       border: none;
       display: block;
       background: #01030a;
+      will-change: transform;
     }
 
     .frame .status {
@@ -134,7 +113,7 @@
       padding: 1rem 1.2rem;
       border: 1px solid rgba(246, 194, 91, 0.24);
       background: linear-gradient(160deg, rgba(7, 12, 21, 0.9), rgba(7, 12, 21, 0.74));
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
     }
 
     .panel h2 {
@@ -161,28 +140,23 @@
     }
 
     @media (max-width: 960px) {
+      body {
+        padding-top: 1rem;
+      }
+
       main {
         grid-template-columns: 1fr;
       }
 
       iframe {
-        height: 60vh;
+        height: 64vh;
       }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="title-block">
-      <h1>Great Taxi Assignment</h1>
-      <p>A compact GTA-like taxi challenge from the Vibe coding competition.</p>
-    </div>
-    <div class="cta-links">
-      <a href="index.html">Back to Hub</a>
-    </div>
-  </header>
-
   <main>
+    <a class="back-link" href="index.html">Back to Hub</a>
     <section class="frame">
       <header>
         <div class="title-block">

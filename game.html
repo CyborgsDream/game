@@ -28,6 +28,7 @@
     let orientationOffsetQuat=new THREE.Quaternion();
     let lastQuat=new THREE.Quaternion();
     let offsetInitialized=false;
+    let keyboardState={};
     let explosions=[];
     let fallingTiles=[];
     let lastTime=performance.now()*0.001;
@@ -36,6 +37,7 @@
     const clickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
     const ROOM_SIZE=30;
     const GRID_SPACING=10;
+    const moveDir=new THREE.Vector3();
     function initScene(){
       scene=new THREE.Scene();
       scene.background=new THREE.Color(0x000000);
@@ -228,6 +230,28 @@
         }
       }
 
+      function handleKeyDown(e){
+        if(e.code.startsWith('Arrow')) e.preventDefault();
+        keyboardState[e.code]=true;
+      }
+
+      function handleKeyUp(e){
+        if(e.code.startsWith('Arrow')) e.preventDefault();
+        keyboardState[e.code]=false;
+      }
+
+      function updateKeyboardControls(delta){
+        const moveSpeed=6;
+        const rotateSpeed=1.5;
+        if(keyboardState['ArrowLeft']) camera.rotation.y+=rotateSpeed*delta;
+        if(keyboardState['ArrowRight']) camera.rotation.y-=rotateSpeed*delta;
+        camera.getWorldDirection(moveDir);
+        moveDir.y=0;
+        moveDir.normalize();
+        if(keyboardState['ArrowUp']) camera.position.addScaledVector(moveDir,moveSpeed*delta);
+        if(keyboardState['ArrowDown']) camera.position.addScaledVector(moveDir,-moveSpeed*delta);
+      }
+
       function handleClick(event){
         const rect=renderer.domElement.getBoundingClientRect();
         const mouse=new THREE.Vector2(
@@ -400,6 +424,7 @@
         updateRaisedFloor(time);
         updateExplosions(time);
         updateFallingTiles(delta);
+        updateKeyboardControls(delta);
         renderer.render(scene,camera);
       }
 
@@ -409,6 +434,8 @@
       const btn=document.getElementById('permissionBtn');
       const calib=document.getElementById('calibrateBtn');
       calib.addEventListener('click',calibrateOrientation);
+      window.addEventListener('keydown',handleKeyDown);
+      window.addEventListener('keyup',handleKeyUp);
       if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
         btn.style.display='block';
         btn.addEventListener('click',requestPermission);
